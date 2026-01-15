@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "validation-service/backend/proto";
+
+// GreetingService provides greeting functionality
+service GreetingService {
+  // SayHello takes a name and returns a greeting message
+  rpc SayHello(HelloRequest) returns (HelloResponse);
+}
+
+// HelloRequest contains the name to greet
+message HelloRequest {
+  string name = 1;
+}
+
+// HelloResponse contains the greeting message
+message HelloResponse {
+  string message = 1;
+}
