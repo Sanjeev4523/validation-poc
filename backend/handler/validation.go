@@ -23,11 +23,12 @@ func NewValidationHandler(validationService *service.ValidationService) *Validat
 type ValidateProtoRequest struct {
 	SchemaName string          `json:"schemaName"`
 	Payload    json.RawMessage `json:"payload"`
+	Commit     string          `json:"commit,omitempty"` // Optional commit ID, defaults to "main"
 }
 
 // ValidateProtoResponse represents the response payload
 type ValidateProtoResponse struct {
-	Success bool                        `json:"success"`
+	Success bool                      `json:"success"`
 	Errors  []service.ValidationError `json:"errors"`
 }
 
@@ -66,10 +67,16 @@ func (h *ValidationHandler) ValidateProto(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	logger.Info("Processing validation request for schemaName=%s", req.SchemaName)
+	// Set default commit to "main" if not provided
+	commit := req.Commit
+	if commit == "" {
+		commit = "main"
+	}
+
+	logger.Info("Processing validation request for schemaName=%s, commit=%s", req.SchemaName, commit)
 
 	// Call validation service
-	success, errors, err := h.validationService.ValidateProto(req.SchemaName, req.Payload)
+	success, errors, err := h.validationService.ValidateProto(req.SchemaName, req.Payload, commit)
 	if err != nil {
 		logger.Debug("Validation service error for schemaName=%s: %v", req.SchemaName, err)
 		// Check if it's a client error (unknown schema, invalid JSON, etc.)

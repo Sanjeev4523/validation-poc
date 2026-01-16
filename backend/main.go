@@ -143,6 +143,16 @@ func main() {
 	validationHandler := handler.NewValidationHandler(validationService)
 	logger.Info("Validation handler initialized successfully")
 
+	// Initialize commits service
+	logger.Debug("Initializing commits service...")
+	commitsService := service.NewCommitsService(bsrOrg, bsrModule, bsrToken)
+	logger.Info("Commits service initialized successfully")
+
+	// Initialize commits handler
+	logger.Debug("Initializing commits handler...")
+	commitsHandler := handler.NewCommitsHandler(commitsService)
+	logger.Info("Commits handler initialized successfully")
+
 	// Start gRPC server in a goroutine
 	go func() {
 		logger.Debug("Starting gRPC server on port :50051...")
@@ -179,6 +189,10 @@ func main() {
 	http.HandleFunc("/api/v1/validate-proto", corsMiddleware(validationHandler.ValidateProto))
 	logger.Debug("Registered route: POST /api/v1/validate-proto")
 
+	// Register commits API route with CORS
+	http.HandleFunc("/api/v1/commits", corsMiddleware(commitsHandler.GetCommits))
+	logger.Debug("Registered route: GET /api/v1/commits")
+
 	// Also register root route for convenience with CORS
 	http.HandleFunc("/", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
@@ -196,6 +210,7 @@ func main() {
 	logger.Info("Schema API route available at http://localhost%s/api/v1/schema/{messageName}", port)
 	logger.Info("Proto files API route available at http://localhost%s/api/v1/proto-files", port)
 	logger.Info("Validation API route available at http://localhost%s/api/v1/validate-proto", port)
+	logger.Info("Commits API route available at http://localhost%s/api/v1/commits", port)
 	logger.Info("Validation service started successfully")
 
 	if err := http.ListenAndServe(port, nil); err != nil {

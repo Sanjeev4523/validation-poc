@@ -66,12 +66,16 @@ type GetFileDescriptorSetResponse struct {
 // fetchDescriptorFromBSR fetches the FileDescriptorSet from BSR using the Reflection API
 // and returns a *protoregistry.Files
 // schemaName is the fully qualified message name (e.g., "proto.Task") to include in symbols
-func (s *ValidationService) fetchDescriptorFromBSR(schemaName string) (*protoregistry.Files, error) {
+// commit is the commit ID to use (defaults to "main" if empty)
+func (s *ValidationService) fetchDescriptorFromBSR(schemaName string, commit string) (*protoregistry.Files, error) {
 	// Build module name in format: buf.build/{org}/{module}
 	moduleName := fmt.Sprintf("buf.build/%s/%s", s.bsrOrg, s.bsrModule)
 
-	// Get version from environment variable, default to "latest"
-	version := config.GetEnv("BSR_VERSION", "main")
+	// Use provided commit, or fallback to environment variable, or default to "main"
+	version := commit
+	if version == "" {
+		version = config.GetEnv("BSR_VERSION", "main")
+	}
 
 	// Build request body with symbols (fully qualified message name)
 	requestBody := GetFileDescriptorSetRequest{
@@ -205,8 +209,13 @@ func (s *ValidationService) findMessageDescriptor(schemaName string, files *prot
 
 // ValidateProto validates a JSON payload against a protobuf message definition
 // Returns success status, array of validation errors, and any processing error
-func (s *ValidationService) ValidateProto(schemaName string, jsonPayload []byte) (bool, []ValidationError, error) {
-	logger.Debug("ValidateProto called for schemaName=%s, mode=%d", schemaName, s.schemaSourceMode)
+// commit is the commit ID to use when fetching from BSR (defaults to "main" if empty)
+func (s *ValidationService) ValidateProto(schemaName string, jsonPayload []byte, commit string) (bool, []ValidationError, error) {
+	// Set default commit to "main" if not provided
+	if commit == "" {
+		commit = "main"
+	}
+	logger.Debug("ValidateProto called for schemaName=%s, commit=%s, mode=%d", schemaName, commit, s.schemaSourceMode)
 
 	var md protoreflect.MessageDescriptor
 	var err error
@@ -215,7 +224,7 @@ func (s *ValidationService) ValidateProto(schemaName string, jsonPayload []byte)
 	if s.schemaSourceMode == config.BSROnly {
 		// BSROnly: Always fetch from BSR
 		logger.Debug("BSROnly mode: fetching descriptor from BSR for %s", schemaName)
-		files, err := s.fetchDescriptorFromBSR(schemaName)
+		files, err := s.fetchDescriptorFromBSR(schemaName, commit)
 		if err != nil {
 			logger.Debug("Failed to fetch descriptor from BSR for schemaName=%s: %v", schemaName, err)
 			return false, nil, fmt.Errorf("failed to fetch descriptor from BSR: %w", err)
@@ -240,7 +249,7 @@ func (s *ValidationService) ValidateProto(schemaName string, jsonPayload []byte)
 		if err != nil {
 			logger.Debug("Not found in GlobalFiles, fetching from BSR for schemaName=%s", schemaName)
 			// Fallback to BSR
-			files, bsrErr := s.fetchDescriptorFromBSR(schemaName)
+			files, bsrErr := s.fetchDescriptorFromBSR(schemaName, commit)
 			if bsrErr != nil {
 				logger.Debug("Failed to fetch descriptor from BSR for schemaName=%s: %v", schemaName, bsrErr)
 				return false, nil, fmt.Errorf("unknown schema name: %s (local and BSR lookup failed)", schemaName)
