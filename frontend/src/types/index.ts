@@ -35,4 +35,33 @@ export interface ValidationResult {
   // For combined validation, track individual results
   jsonValid?: boolean;
   protoValid?: boolean;
+  // Track commit used for validation
+  commit?: string;
+}
+
+export interface Commit {
+  id: string;
+  createTime: string;
+  ownerId: string;
+  moduleId: string;
+  digest: {
+    type: string;
+    value: string;
+  };
+  createdByUserId: string;
+}
+
+export interface CommitCheckState {
+  status: string;
+  updateTime: string;
+}
+
+export interface LabelHistoryValue {
+  commit: Commit;
+  commitCheckState: CommitCheckState;
+}
+
+export interface CommitsResponse {
+  nextPageToken?: string;
+  values: LabelHistoryValue[];
 }

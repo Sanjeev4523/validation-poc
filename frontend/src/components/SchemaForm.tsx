@@ -4,22 +4,27 @@ import Form from '@rjsf/core';
 import validator from '@rjsf/validator-ajv8';
 import type { JSONSchema7 } from 'json-schema';
 import type { IChangeEvent } from '@rjsf/core';
-import { fetchSchema, validateProto } from '../services/api';
-import type { ApiError, ValidationResult } from '../types';
+import { fetchSchema, validateProto, fetchCommits } from '../services/api';
+import type { ApiError, ValidationResult, CommitsResponse } from '../types';
 import { ErrorDisplay } from './ErrorDisplay';
 import { ValidationResults } from './ValidationResults';
 
 interface SchemaFormProps {
   fullyQualifiedName: string;
+  commits: CommitsResponse | null;
 }
 
-export function SchemaForm({ fullyQualifiedName }: SchemaFormProps) {
+export function SchemaForm({ fullyQualifiedName, commits: initialCommits }: SchemaFormProps) {
   const [schema, setSchema] = useState<JSONSchema7 | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ApiError | null>(null);
   const [formData, setFormData] = useState<any>({});
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [validating, setValidating] = useState(false);
+  const [commits, setCommits] = useState<CommitsResponse | null>(initialCommits);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [selectedCommit, setSelectedCommit] = useState<string>('main');
+  const [loadingCommits, setLoadingCommits] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -136,19 +141,51 @@ export function SchemaForm({ fullyQualifiedName }: SchemaFormProps) {
     }
   };
 
+  // Load commits with custom page size
+  const loadCommits = async (size: number) => {
+    setLoadingCommits(true);
+    try {
+      const commitsData = await fetchCommits(size, 'main');
+      setCommits(commitsData);
+    } catch (err) {
+      console.error('Error fetching commits:', err);
+    } finally {
+      setLoadingCommits(false);
+    }
+  };
+
+  // Load commits if not provided
+  useEffect(() => {
+    if (!commits) {
+      loadCommits(pageSize);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Handle page size change
+  const handlePageSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newSize = parseInt(e.target.value, 10);
+    if (!isNaN(newSize) && newSize > 0) {
+      setPageSize(newSize);
+      loadCommits(newSize);
+    }
+  };
+
   // Proto validation via API
   const handleValidateProto = async () => {
     if (!schema) return;
 
     setValidating(true);
     try {
-      const response = await validateProto(fullyQualifiedName, formData);
+      const commitToUse = selectedCommit === 'main' ? undefined : selectedCommit;
+      const response = await validateProto(fullyQualifiedName, formData, commitToUse);
       
       const result: ValidationResult = {
         valid: response.success,
         data: formData,
         apiErrors: response.errors.length > 0 ? response.errors : undefined,
         validationType: 'proto',
+        commit: selectedCommit,
       };
       setValidationResult(result);
     } catch (err) {
@@ -160,6 +197,7 @@ export function SchemaForm({ fullyQualifiedName }: SchemaFormProps) {
         // Use string format for API errors (catchall)
         apiErrors: [errorMessage],
         validationType: 'proto',
+        commit: selectedCommit,
       };
       setValidationResult(result);
     } finally {
@@ -206,7 +244,8 @@ export function SchemaForm({ fullyQualifiedName }: SchemaFormProps) {
 
       // JSON validation passed, now validate proto
       try {
-        const protoResponse = await validateProto(fullyQualifiedName, formData);
+        const commitToUse = selectedCommit === 'main' ? undefined : selectedCommit;
+        const protoResponse = await validateProto(fullyQualifiedName, formData, commitToUse);
         const protoValid = protoResponse.success;
 
         const result: ValidationResult = {
@@ -216,6 +255,7 @@ export function SchemaForm({ fullyQualifiedName }: SchemaFormProps) {
           validationType: 'both',
           jsonValid: jsonValid,
           protoValid: protoValid,
+          commit: selectedCommit,
         };
         setValidationResult(result);
       } catch (protoErr) {
@@ -229,6 +269,7 @@ export function SchemaForm({ fullyQualifiedName }: SchemaFormProps) {
           validationType: 'both',
           jsonValid: jsonValid,
           protoValid: false,
+          commit: selectedCommit,
         };
         setValidationResult(result);
       }
@@ -283,6 +324,16 @@ export function SchemaForm({ fullyQualifiedName }: SchemaFormProps) {
     );
   }
 
+  // Prepare commits list with "main" on top
+  const commitsList = commits ? [
+    { id: 'main', createTime: '', label: 'main (default)' },
+    ...commits.values.map((value) => ({
+      id: value.commit.id,
+      createTime: value.commit.createTime,
+      label: `${value.commit.id.substring(0, 8)} - ${new Date(value.commit.createTime).toLocaleString()}`,
+    }))
+  ] : [{ id: 'main', createTime: '', label: 'main (default)' }];
+
   return (
     <div>
       <h2 className="text-2xl font-semibold text-white mb-2">
@@ -291,6 +342,46 @@ export function SchemaForm({ fullyQualifiedName }: SchemaFormProps) {
       {schema.description && (
         <p className="text-sm text-gray-400 mb-6">{schema.description}</p>
       )}
+
+      {/* Commits and Page Size Controls */}
+      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="commit-select" className="block text-sm font-medium text-gray-300 mb-2">
+              Select Commit
+            </label>
+            <select
+              id="commit-select"
+              value={selectedCommit}
+              onChange={(e) => setSelectedCommit(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {commitsList.map((commit) => (
+                <option key={commit.id} value={commit.id}>
+                  {commit.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="page-size" className="block text-sm font-medium text-gray-300 mb-2">
+              Page Size
+            </label>
+            <input
+              id="page-size"
+              type="number"
+              min="1"
+              value={pageSize}
+              onChange={handlePageSizeChange}
+              disabled={loadingCommits}
+              className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            />
+            {loadingCommits && (
+              <p className="text-xs text-gray-400 mt-1">Loading commits...</p>
+            )}
+          </div>
+        </div>
+      </div>
 
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
         <Form

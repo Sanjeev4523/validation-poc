@@ -1,5 +1,5 @@
 import type { JSONSchema7 } from "json-schema";
-import type { ApiError, ProtoFile } from "../types";
+import type { ApiError, ProtoFile, CommitsResponse } from "../types";
 
 const API_BASE_URL = "http://localhost:8080/api";
 
@@ -107,23 +107,86 @@ export interface ValidateProtoResponse {
   errors: ValidationError[];
 }
 
+export async function fetchCommits(
+  pageSize: number = 10,
+  label: string = "main",
+  pageToken?: string
+): Promise<CommitsResponse> {
+  const url = new URL(`${API_BASE_URL}/v1/commits`);
+  url.searchParams.set("pageSize", pageSize.toString());
+  url.searchParams.set("label", label);
+  if (pageToken) {
+    url.searchParams.set("pageToken", pageToken);
+  }
+
+  try {
+    const response = await fetch(url.toString());
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "Unknown error");
+      const error: ApiError = {
+        message: errorText || `HTTP ${response.status}: ${response.statusText}`,
+        statusCode: response.status,
+      };
+      throw error;
+    }
+
+    const data = await response.json();
+
+    // Validate response structure
+    if (typeof data !== "object" || data === null) {
+      throw {
+        message: "Invalid response: response is not an object",
+      } as ApiError;
+    }
+
+    if (!Array.isArray(data.values)) {
+      throw {
+        message: "Invalid response: values field is not an array",
+      } as ApiError;
+    }
+
+    return data as CommitsResponse;
+  } catch (error) {
+    if (error && typeof error === "object" && "statusCode" in error) {
+      throw error;
+    }
+
+    // Network or other errors
+    throw {
+      message:
+        error instanceof Error ? error.message : "Failed to fetch commits",
+    } as ApiError;
+  }
+}
+
 export async function validateProto(
   schemaName: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  payload: any
+  payload: any,
+  commit?: string
 ): Promise<ValidateProtoResponse> {
   const url = `${API_BASE_URL}/v1/validate-proto`;
 
   try {
+    const requestBody: {
+      schemaName: string;
+      payload: any;
+      commit?: string;
+    } = {
+      schemaName,
+      payload,
+    };
+    if (commit) {
+      requestBody.commit = commit;
+    }
+
     const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        schemaName,
-        payload,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {

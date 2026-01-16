@@ -1,32 +1,37 @@
 import { useState, useEffect } from 'react';
 import { ProtoFileList } from './components/ProtoFileList';
 import { SchemaForm } from './components/SchemaForm';
-import { fetchProtoFiles } from './services/api';
-import type { ProtoFile, ApiError } from './types';
+import { fetchProtoFiles, fetchCommits } from './services/api';
+import type { ProtoFile, ApiError, CommitsResponse } from './types';
 
 function App() {
   const [selectedProto, setSelectedProto] = useState<ProtoFile | null>(null);
   const [protoFiles, setProtoFiles] = useState<ProtoFile[]>([]);
+  const [commits, setCommits] = useState<CommitsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadProtoFiles = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const files = await fetchProtoFiles();
+        const [files, commitsData] = await Promise.all([
+          fetchProtoFiles(),
+          fetchCommits(10, 'main')
+        ]);
         setProtoFiles(files);
+        setCommits(commitsData);
       } catch (err) {
         const apiError = err as ApiError;
-        setError(apiError.message || 'Failed to load proto files');
-        console.error('Error fetching proto files:', err);
+        setError(apiError.message || 'Failed to load data');
+        console.error('Error fetching data:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    loadProtoFiles();
+    loadData();
   }, []);
 
   const handleSelectProto = (protoFile: ProtoFile) => {
@@ -85,7 +90,10 @@ function App() {
 
           <div className="lg:col-span-2">
             {selectedProto ? (
-              <SchemaForm fullyQualifiedName={selectedProto.fullyQualifiedName} />
+              <SchemaForm 
+                fullyQualifiedName={selectedProto.fullyQualifiedName}
+                commits={commits}
+              />
             ) : (
               <div className="bg-gray-800 border border-gray-700 rounded-lg p-12 text-center">
                 <svg

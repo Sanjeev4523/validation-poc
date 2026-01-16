@@ -158,6 +158,12 @@ export function ValidationResults({ result }: ValidationResultsProps) {
 
         <div>
           <h4 className="text-sm font-medium text-white mb-2">Submitted Data:</h4>
+          {result.commit && (
+            <div className="mb-2">
+              <span className="text-xs text-gray-400">Commit: </span>
+              <span className="text-xs text-gray-300 font-mono">{result.commit}</span>
+            </div>
+          )}
           <pre className="bg-gray-900 border border-gray-700 rounded p-3 text-xs overflow-x-auto text-gray-300">
             {JSON.stringify(result.data, null, 2)}
           </pre>
