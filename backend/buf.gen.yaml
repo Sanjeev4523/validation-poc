@@ -6,3 +6,6 @@ plugins:
   - remote: buf.build/grpc/go
     out: .
     opt: paths=source_relative
+  - remote: buf.build/bufbuild/protoschema-jsonschema
+    out: gen/jsonschema
+    opt: target=all

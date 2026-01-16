@@ -1,0 +1,16 @@
+{
+  "$id": "proto.HelloResponse.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "HelloResponse contains the greeting message",
+  "properties": {
+    "message": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "message"
+  ],
+  "title": "Hello Response",
+  "type": "object"
+}

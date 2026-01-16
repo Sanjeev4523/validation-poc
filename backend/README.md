@@ -50,11 +50,15 @@ make install-deps
 
 ### Generate Proto Code
 
-After modifying `.proto` files, regenerate the Go code:
+After modifying `.proto` files, regenerate the Go code and JSON Schema files:
 
 ```bash
 make proto
 ```
+
+This will generate:
+- Go code from proto files (`.pb.go` files)
+- JSON Schema files from proto files with protovalidate constraints (in `gen/jsonschema/`)
 
 Or manually:
 ```bash
@@ -62,6 +66,8 @@ protoc --go_out=. --go_opt=paths=source_relative \
     --go-grpc_out=. --go-grpc_opt=paths=source_relative \
     proto/greeting.proto
 ```
+
+Note: The manual command above only generates Go code. Use `buf generate` or `make proto` to also generate JSON Schema files.
 
 ### Run the Server
 
@@ -104,6 +110,8 @@ backend/
 │   ├── greeting.proto   # Protocol buffer definition
 │   ├── greeting.pb.go   # Generated Go code (do not edit)
 │   └── greeting_grpc.pb.go  # Generated gRPC code (do not edit)
+├── gen/
+│   └── jsonschema/      # Generated JSON Schema files (do not edit)
 ├── go.mod               # Go module dependencies
 └── Makefile             # Build automation
 ```
@@ -119,5 +127,7 @@ backend/
 ## Notes
 
 - Never manually edit `*.pb.go` files - they are auto-generated
+- Never manually edit files in `gen/jsonschema/` - they are auto-generated
 - Always run `make proto` after modifying `.proto` files
 - The server runs both gRPC and HTTP servers concurrently
+- JSON Schema files include validation constraints from protovalidate annotations (e.g., `min_len`, `max_len`, etc.)

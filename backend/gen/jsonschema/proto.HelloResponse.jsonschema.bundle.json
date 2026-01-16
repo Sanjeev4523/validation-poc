@@ -1,0 +1,20 @@
+{
+  "$defs": {
+    "proto.HelloResponse.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "HelloResponse contains the greeting message",
+      "properties": {
+        "message": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Hello Response",
+      "type": "object"
+    }
+  },
+  "$id": "proto.HelloResponse.jsonschema.bundle.json",
+  "$ref": "#/$defs/proto.HelloResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

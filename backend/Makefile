@@ -32,4 +32,5 @@ run:
 clean:
 	@echo "Cleaning generated files..."
 	@rm -f proto/*.pb.go
+	@rm -rf gen/jsonschema
 	@echo "Clean complete!"

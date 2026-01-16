@@ -1,0 +1,21 @@
+{
+  "$defs": {
+    "proto.HelloRequest.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "HelloRequest contains the name to greet",
+      "properties": {
+        "name": {
+          "default": "",
+          "minLength": 3,
+          "type": "string"
+        }
+      },
+      "title": "Hello Request",
+      "type": "object"
+    }
+  },
+  "$id": "proto.HelloRequest.schema.bundle.json",
+  "$ref": "#/$defs/proto.HelloRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
