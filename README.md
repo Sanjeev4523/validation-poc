@@ -51,6 +51,36 @@ Before setting up the project, ensure you have the following installed:
    ```
    Currently configured as: `buf.build/sanjeev-personal/validation`
 
+### Environment Variable Configuration
+
+The backend supports configuration through environment variables. Create a `.env` file in the `backend/` directory (you can use `backend/.env.example` as a template):
+
+1. Copy the example file:
+   ```bash
+   cd backend
+   cp .env.example .env
+   ```
+
+2. Configure the following variables in `.env`:
+
+   - **`BUF_TOKEN`**: Your Buf Schema Registry authentication token (required for accessing private BSR repositories)
+     - Get your token from: https://buf.build/settings/user
+   
+   - **`LOG_LEVEL`**: Logging level (default: `INFO`)
+     - Options: `DEBUG`, `INFO`, `WARN`, `ERROR`
+   
+   - **`SCHEMA_SOURCE_MODE`**: Strategy for retrieving JSON schemas (default: `local-then-bsr`)
+     - `local-then-bsr`: Check local files first, then fall back to BSR if not found
+     - `bsr-only`: Skip local file check and fetch directly from BSR
+     - `local-only`: Only use local files, never fetch from BSR
+   
+   - **`VALIDATION_SOURCE_MODE`**: Strategy for retrieving proto descriptors for validation (default: `bsr-only`)
+     - `bsr-only`: Fetch proto descriptors directly from BSR
+     - `local-only`: Only use local proto files
+     - `local-then-bsr`: Check local files first, then fall back to BSR
+
+**Note**: If the `.env` file doesn't exist, the application will use system environment variables or default values.
+
 ### API Server Configuration
 
 The frontend API base URL is configured in `frontend/src/services/api.ts` as:
@@ -183,16 +213,53 @@ npm run dev
 
 3. The form will automatically load the JSON Schema for the selected proto message type
 
-4. Fill in the form fields with test data, including values that violate validation constraints (e.g., empty strings, negative numbers, etc.)
+4. **Commit History (Optional)**: 
+   - The frontend can fetch commit history from the Buf registry
+   - Select a commit from the dropdown to validate against a specific version of the proto schema
+   - Adjust the page size to control how many commits are fetched
+   - By default, validation uses the `main` branch/commit
 
-5. Submit the form to see validation results:
+5. Fill in the form fields with test data, including values that violate validation constraints (e.g., empty strings, negative numbers, etc.)
+
+6. Submit the form to see validation results:
    - **JSON Schema validation**: Client-side validation using the generated JSON Schema
-   - **protovalidate validation**: Server-side validation using protovalidate library
+   - **protovalidate validation**: Server-side validation using protovalidate library (validates against the selected commit if specified)
    - Both validation results are displayed, showing friendly error messages and technical details
 
-This workflow demonstrates how protovalidate constraints in proto files are converted to JSON Schema rules and validated at both the client and server levels.
+This workflow demonstrates how protovalidate constraints in proto files are converted to JSON Schema rules and validated at both the client and server levels. The commit history feature allows you to validate against specific versions of your proto schemas stored in the Buf registry.
 
-## 6. Examples
+## 6. Features
+
+### Commit History Integration
+
+The service supports fetching and validating against specific commits from the Buf Schema Registry:
+
+- **Commit History API**: `GET /api/v1/commits?label=main&pageSize=10&pageToken=...`
+  - Fetches commit history for a specific label (default: `main`)
+  - Supports pagination with `pageSize` and `pageToken` parameters
+  - Returns commit information including commit ID, creation time, and digest
+
+- **Commit-Based Validation**: When validating proto messages, you can specify a commit ID to validate against a specific version of the schema stored in BSR
+  - The validation service fetches the FileDescriptorSet from BSR for the specified commit
+  - This enables validating against historical versions of your proto schemas
+  - Defaults to `main` branch if no commit is specified
+
+**Commit History UI Example:**
+The frontend provides a user-friendly interface for selecting commits and validating proto messages. You can select a commit from the dropdown, adjust the page size for commit retrieval, and validate forms against specific schema versions.
+
+![Commit History UI](docs/commits-ui.png)
+
+### Schema Source Modes
+
+The service supports flexible schema retrieval strategies:
+
+- **Local-Then-BSR**: Checks local files first, falls back to BSR if not found (default for schemas)
+- **BSR-Only**: Always fetches from Buf Schema Registry, useful for production environments
+- **Local-Only**: Only uses local files, useful for offline development
+
+These modes can be configured separately for schema retrieval and validation descriptor retrieval via environment variables.
+
+## 7. Examples
 
 ### Conditional Order Validation
 
@@ -207,3 +274,17 @@ When an express order includes the required `express_fee` field, validation pass
 When an express order is submitted without the required `express_fee` field, validation fails with a CEL constraint error.
 
 ![Conditional Order Fail](docs/conditional-order-fail.png)
+
+### Available Proto Messages
+
+The service includes various proto message types for validation examples:
+
+- **Task Management**: `proto.Task`, `proto.UpdateTask`, `proto.DeleteTask`
+- **Order Processing**: `proto.ConditionalOrder`, `proto.ComplexOrder`, `proto.OrderItem`
+- **Product Management**: `proto.Product`, `proto.AgeRestrictedProduct`, `proto.InventoryItem`
+- **Customer Information**: `proto.CustomerInfo`, `proto.PersonalInfo`, `proto.ContactInfo`, `proto.EmergencyContact`
+- **Payment & Shipping**: `proto.PaymentInfo`, `proto.ShippingInfo`, `proto.DiscountCoupon`
+- **Employee & Warehouse**: `proto.EmployeeProfile`, `proto.WorkInfo`, `proto.Warehouse`
+- **Utility Types**: `proto.SimpleUser`, `proto.NumericTypes`, `proto.DateRange`, `proto.StatusMessage`, `proto.ProductList`
+
+Each proto message includes validation rules defined using protovalidate constraints, which are automatically converted to JSON Schema validation rules for frontend validation.
