@@ -2,3 +2,5 @@ version: v2
 modules:
   - path: .
     name: buf.build/sanjeev-personal/validation
+deps:
+  - buf.build/bufbuild/protovalidate

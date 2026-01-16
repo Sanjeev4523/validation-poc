@@ -8,17 +8,26 @@ import (
 	"net/http"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
+	"buf.build/go/protovalidate"
 	"validation-service/backend/proto"
 )
 
 // greetingServer implements the GreetingServiceServer interface
 type greetingServer struct {
 	proto.UnimplementedGreetingServiceServer
+	validator protovalidate.Validator
 }
 
 // SayHello implements the SayHello RPC method
 func (s *greetingServer) SayHello(ctx context.Context, req *proto.HelloRequest) (*proto.HelloResponse, error) {
+	// Validate the request
+	if err := s.validator.Validate(req); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "validation failed: %v", err)
+	}
+
 	return &proto.HelloResponse{
 		Message: "hello " + req.GetName(),
 	}, nil
@@ -41,6 +50,12 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// Create validator instance
+	validator, err := protovalidate.New()
+	if err != nil {
+		log.Fatalf("Failed to create validator: %v", err)
+	}
+
 	// Start gRPC server in a goroutine
 	go func() {
 		lis, err := net.Listen("tcp", ":50051")
@@ -49,7 +64,9 @@ func main() {
 		}
 
 		s := grpc.NewServer()
-		proto.RegisterGreetingServiceServer(s, &greetingServer{})
+		proto.RegisterGreetingServiceServer(s, &greetingServer{
+			validator: validator,
+		})
 
 		log.Printf("gRPC server starting on port :50051")
 		if err := s.Serve(lis); err != nil {

@@ -4,6 +4,8 @@ package proto;
 
 option go_package = "validation-service/backend/proto";
 
+import "buf/validate/validate.proto";
+
 // GreetingService provides greeting functionality
 service GreetingService {
   // SayHello takes a name and returns a greeting message
@@ -12,7 +14,7 @@ service GreetingService {
 
 // HelloRequest contains the name to greet
 message HelloRequest {
-  string name = 1;
+  string name = 1 [(buf.validate.field).string.min_len = 3];
 }
 
 // HelloResponse contains the greeting message
