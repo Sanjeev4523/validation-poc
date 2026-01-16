@@ -191,3 +191,19 @@ npm run dev
    - Both validation results are displayed, showing friendly error messages and technical details
 
 This workflow demonstrates how protovalidate constraints in proto files are converted to JSON Schema rules and validated at both the client and server levels.
+
+## 6. Examples
+
+### Conditional Order Validation
+
+The `ConditionalOrder` message demonstrates conditional required fields using CEL (Common Expression Language) constraints. The `express_fee` field is required only when `order_type` is `ORDER_TYPE_EXPRESS`.
+
+**Validation Pass Example:**
+When an express order includes the required `express_fee` field, validation passes successfully.
+
+![Conditional Order Pass](docs/conditional-order-pass.png)
+
+**Validation Fail Example:**
+When an express order is submitted without the required `express_fee` field, validation fails with a CEL constraint error.
+
+![Conditional Order Fail](docs/conditional-order-fail.png)
