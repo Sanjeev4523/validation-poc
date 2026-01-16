@@ -39,3 +39,73 @@ export async function fetchSchema(fullyQualifiedName: string): Promise<JSONSchem
     } as ApiError;
   }
 }
+
+export interface ValidateProtoResponse {
+  success: boolean;
+  errors: string[];
+}
+
+export async function validateProto(
+  schemaName: string,
+  payload: any
+): Promise<ValidateProtoResponse> {
+  const url = `${API_BASE_URL}/v1/validate-proto`;
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        schemaName,
+        payload,
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      const error: ApiError = {
+        message: errorText || `HTTP ${response.status}: ${response.statusText}`,
+        statusCode: response.status,
+      };
+      throw error;
+    }
+    
+    const data = await response.json();
+    
+    // Validate response structure
+    if (typeof data !== 'object' || data === null) {
+      throw {
+        message: 'Invalid response: response is not an object',
+      } as ApiError;
+    }
+    
+    // Ensure response has expected structure
+    if (typeof data.success !== 'boolean') {
+      throw {
+        message: 'Invalid response: missing or invalid success field',
+      } as ApiError;
+    }
+    
+    if (!Array.isArray(data.errors)) {
+      throw {
+        message: 'Invalid response: errors field is not an array',
+      } as ApiError;
+    }
+    
+    return {
+      success: data.success,
+      errors: data.errors || [],
+    };
+  } catch (error) {
+    if (error && typeof error === 'object' && 'statusCode' in error) {
+      throw error;
+    }
+    
+    // Network or other errors
+    throw {
+      message: error instanceof Error ? error.message : 'Failed to validate proto',
+    } as ApiError;
+  }
+}
