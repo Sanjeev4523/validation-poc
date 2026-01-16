@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "validation-service/backend/proto";
+
+import "buf/validate/validate.proto";
+
+// DeleteTask represents a request to delete a task with an optional comment
+message DeleteTask {
+  // task_id is the unique identifier of the task to delete (required, min 1 character)
+  string task_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1,
+      max_len: 100
+    }
+  ];
+
+  // comment is an optional reason or note for deleting the task (max 1000 characters)
+  string comment = 2 [
+    (buf.validate.field).string.max_len = 1000
+  ];
+}

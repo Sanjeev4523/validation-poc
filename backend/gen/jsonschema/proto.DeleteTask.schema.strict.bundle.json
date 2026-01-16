@@ -1,0 +1,31 @@
+{
+  "$defs": {
+    "proto.DeleteTask.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "DeleteTask represents a request to delete a task with an optional comment",
+      "properties": {
+        "comment": {
+          "description": "comment is an optional reason or note for deleting the task (max 1000 characters)",
+          "maxLength": 1000,
+          "type": "string"
+        },
+        "task_id": {
+          "description": "task_id is the unique identifier of the task to delete (required, min 1 character)",
+          "maxLength": 100,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "comment"
+      ],
+      "title": "Delete Task",
+      "type": "object"
+    }
+  },
+  "$id": "proto.DeleteTask.schema.strict.bundle.json",
+  "$ref": "#/$defs/proto.DeleteTask.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
