@@ -1,10 +1,11 @@
-.PHONY: proto generate run install-deps clean help
+.PHONY: proto generate run install-deps clean push help
 
 # Default target
 help:
 	@echo "Available targets:"
 	@echo "  make install-deps  - Check for buf CLI installation"
 	@echo "  make proto         - Generate Go code from .proto files using buf"
+	@echo "  make push          - Push proto files to buf registry"
 	@echo "  make run           - Run the gRPC and HTTP server"
 	@echo "  make clean         - Clean generated files"
 	@echo "  make help          - Show this help message"
@@ -22,6 +23,13 @@ proto:
 	@which buf > /dev/null || (echo "Error: buf CLI not found. Run 'make install-deps' first." && exit 1)
 	@buf generate
 	@echo "Proto code generated successfully!"
+
+# Push proto files to buf registry
+push:
+	@echo "Pushing proto files to buf registry..."
+	@which buf > /dev/null || (echo "Error: buf CLI not found. Run 'make install-deps' first." && exit 1)
+	@buf push
+	@echo "Proto files pushed successfully!"
 
 # Run the server
 run:
