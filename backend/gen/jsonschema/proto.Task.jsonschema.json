@@ -1,0 +1,51 @@
+{
+  "$id": "proto.Task.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Task represents a task with name, description, timestamp, and status",
+  "properties": {
+    "description": {
+      "default": "",
+      "description": "description is an optional task description (max 1000 characters)",
+      "maxLength": 1000,
+      "type": "string"
+    },
+    "name": {
+      "description": "name is the task name (required, min 1 character, max 100 characters)",
+      "maxLength": 100,
+      "minLength": 1,
+      "type": "string"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "enum": [
+            "TASK_STATUS_OPEN",
+            "TASK_STATUS_IN_PROGRESS",
+            "TASK_STATUS_BLOCKED",
+            "TASK_STATUS_COMPLETED"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 4,
+          "minimum": 1,
+          "type": "integer"
+        }
+      ],
+      "description": "status is the current status of the task",
+      "title": "Task Status"
+    },
+    "timestamp": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json",
+      "description": "timestamp is when the task was created or last updated"
+    }
+  },
+  "required": [
+    "name",
+    "timestamp",
+    "status"
+  ],
+  "title": "Task",
+  "type": "object"
+}

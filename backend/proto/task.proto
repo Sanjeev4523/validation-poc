@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "validation-service/backend/proto";
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+// TaskStatus represents the current status of a task
+enum TaskStatus {
+  TASK_STATUS_UNSPECIFIED = 0;
+  TASK_STATUS_OPEN = 1;
+  TASK_STATUS_IN_PROGRESS = 2;
+  TASK_STATUS_BLOCKED = 3;
+  TASK_STATUS_COMPLETED = 4;
+}
+
+// Task represents a task with name, description, timestamp, and status
+message Task {
+  // name is the task name (required, min 1 character, max 100 characters)
+  string name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1,
+      max_len: 100
+    }
+  ];
+
+  // description is an optional task description (max 1000 characters)
+  string description = 2 [
+    (buf.validate.field).string.max_len = 1000
+  ];
+
+  // timestamp is when the task was created or last updated
+  google.protobuf.Timestamp timestamp = 3 [
+    (buf.validate.field).required = true
+  ];
+
+  // status is the current status of the task
+  TaskStatus status = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true,
+      not_in: [0]  // TASK_STATUS_UNSPECIFIED is not allowed
+    }
+  ];
+}

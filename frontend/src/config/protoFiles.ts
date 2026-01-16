@@ -11,4 +11,9 @@ export const protoFiles: ProtoFile[] = [
     description: 'Response message from greeting service',
     fullyQualifiedName: 'proto.HelloResponse',
   },
+  {
+    name: 'Task',
+    description: 'Task with name, description, timestamp, and status',
+    fullyQualifiedName: 'proto.Task',
+  },
 ];
