@@ -3,16 +3,20 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net"
 	"net/http"
+	"path/filepath"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"buf.build/go/protovalidate"
+	"validation-service/backend/handler"
+	"validation-service/backend/logger"
 	"validation-service/backend/proto"
+	"validation-service/backend/service"
+
+	"buf.build/go/protovalidate"
 )
 
 // greetingServer implements the GreetingServiceServer interface
@@ -50,17 +54,48 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// Initialize logger with level from environment variable
+	logger.Init()
+
+	logger.Info("Starting validation service...")
+
 	// Create validator instance
+	logger.Debug("Initializing protovalidate validator...")
 	validator, err := protovalidate.New()
 	if err != nil {
-		log.Fatalf("Failed to create validator: %v", err)
+		logger.Fatal("Failed to create validator: %v", err)
 	}
+	logger.Info("Protovalidate validator initialized successfully")
+
+	// Get base path (directory where main.go is located)
+	logger.Debug("Resolving base path...")
+	basePath, err := filepath.Abs(".")
+	if err != nil {
+		logger.Fatal("Failed to get base path: %v", err)
+	}
+	logger.Debug("Base path resolved to: %s", basePath)
+
+	// Parse BSR configuration from buf.yaml
+	logger.Debug("Parsing BSR configuration from buf.yaml...")
+	bsrOrg, bsrModule := service.GetBSRConfig(basePath)
+	logger.Info("BSR configuration: org=%s, module=%s", bsrOrg, bsrModule)
+
+	// Initialize schema service
+	logger.Debug("Initializing schema service...")
+	schemaService := service.NewSchemaService(bsrOrg, bsrModule, basePath)
+	logger.Info("Schema service initialized successfully")
+
+	// Initialize schema handler
+	logger.Debug("Initializing schema handler...")
+	schemaHandler := handler.NewSchemaHandler(schemaService)
+	logger.Info("Schema handler initialized successfully")
 
 	// Start gRPC server in a goroutine
 	go func() {
+		logger.Debug("Starting gRPC server on port :50051...")
 		lis, err := net.Listen("tcp", ":50051")
 		if err != nil {
-			log.Fatalf("Failed to listen on port 50051: %v", err)
+			logger.Fatal("Failed to listen on port 50051: %v", err)
 		}
 
 		s := grpc.NewServer()
@@ -68,14 +103,20 @@ func main() {
 			validator: validator,
 		})
 
-		log.Printf("gRPC server starting on port :50051")
+		logger.Info("gRPC server starting on port :50051")
 		if err := s.Serve(lis); err != nil {
-			log.Fatalf("Failed to serve gRPC server: %v", err)
+			logger.Fatal("Failed to serve gRPC server: %v", err)
 		}
 	}()
 
 	// Register the hello world route
+	logger.Debug("Registering HTTP routes...")
 	http.HandleFunc("/hello", helloHandler)
+	logger.Debug("Registered route: GET /hello")
+
+	// Register schema API route
+	http.HandleFunc("/api/v1/schema/", schemaHandler.GetSchema)
+	logger.Debug("Registered route: GET /api/v1/schema/{messageName}")
 
 	// Also register root route for convenience
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -85,13 +126,16 @@ func main() {
 		}
 		helloHandler(w, r)
 	})
+	logger.Debug("Registered route: GET /")
 
 	// Start HTTP server on port 8080
 	port := ":8080"
-	log.Printf("HTTP server starting on port %s", port)
-	log.Printf("Hello world route available at http://localhost%s/hello", port)
+	logger.Info("HTTP server starting on port %s", port)
+	logger.Info("Hello world route available at http://localhost%s/hello", port)
+	logger.Info("Schema API route available at http://localhost%s/api/v1/schema/{messageName}", port)
+	logger.Info("Validation service started successfully")
 
 	if err := http.ListenAndServe(port, nil); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+		logger.Fatal("Server failed to start: %v", err)
 	}
 }
