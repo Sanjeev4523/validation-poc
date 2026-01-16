@@ -25,3 +25,6 @@ dist-ssr
 
 # Buf
 .buf/
+
+# env
+.env

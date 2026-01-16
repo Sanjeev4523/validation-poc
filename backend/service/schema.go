@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"validation-service/backend/config"
 	"validation-service/backend/logger"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -16,27 +17,40 @@ import (
 
 // SchemaService handles schema retrieval from local filesystem or BSR
 type SchemaService struct {
-	bsrOrg     string
-	bsrModule  string
-	basePath   string
-	httpClient *http.Client
+	bsrOrg           string
+	bsrModule        string
+	basePath         string
+	httpClient       *http.Client
+	schemaSourceMode config.SchemaSourceMode
+	bsrToken         string
 }
 
 // NewSchemaService creates a new schema service instance
-func NewSchemaService(bsrOrg, bsrModule, basePath string) *SchemaService {
-	logger.Debug("Initializing SchemaService with org=%s, module=%s, basePath=%s", bsrOrg, bsrModule, basePath)
+func NewSchemaService(bsrOrg, bsrModule, basePath string, schemaSourceMode config.SchemaSourceMode) *SchemaService {
+	bsrToken := config.GetEnv("BUF_TOKEN", "")
+	if bsrToken == "" {
+		logger.Warn("BUF_TOKEN is not set. BSR requests may fail for private repositories.")
+	} else {
+		logger.Debug("BUF_TOKEN is set (length: %d)", len(bsrToken))
+	}
+	logger.Debug("Initializing SchemaService with org=%s, module=%s, basePath=%s, mode=%d", bsrOrg, bsrModule, basePath, schemaSourceMode)
 	return &SchemaService{
-		bsrOrg:     bsrOrg,
-		bsrModule:  bsrModule,
-		basePath:   basePath,
-		httpClient: &http.Client{},
+		bsrOrg:           bsrOrg,
+		bsrModule:        bsrModule,
+		basePath:         basePath,
+		httpClient:       &http.Client{},
+		schemaSourceMode: schemaSourceMode,
+		bsrToken:         bsrToken,
 	}
 }
 
 // GetSchema retrieves the JSON schema for a given message name
-// It first checks locally, then fetches from BSR if not found
+// Behavior depends on schemaSourceMode:
+// - BSROnly: Fetches directly from BSR (skips local check)
+// - LocalOnly: Only checks local files (never fetches from BSR)
+// - LocalThenBSR: Checks local first, then falls back to BSR
 func (s *SchemaService) GetSchema(messageName string) ([]byte, error) {
-	logger.Debug("GetSchema called for messageName=%s", messageName)
+	logger.Debug("GetSchema called for messageName=%s, mode=%d", messageName, s.schemaSourceMode)
 
 	// Validate message name format
 	if err := s.validateMessageName(messageName); err != nil {
@@ -45,8 +59,32 @@ func (s *SchemaService) GetSchema(messageName string) ([]byte, error) {
 	}
 	logger.Debug("Message name validation passed for %s", messageName)
 
-	// Check local filesystem first
-	logger.Debug("Checking local filesystem for schema: %s", messageName)
+	// Handle BSROnly mode: skip local check, fetch directly from BSR
+	if s.schemaSourceMode == config.BSROnly {
+		logger.Debug("BSROnly mode: fetching schema directly from BSR for %s", messageName)
+		schema, err := s.fetchFromBSR(messageName)
+		if err != nil {
+			logger.Error("Failed to fetch schema from BSR for %s: %v", messageName, err)
+			return nil, fmt.Errorf("failed to fetch from BSR: %w", err)
+		}
+		logger.Info("Successfully fetched schema from BSR for %s (size: %d bytes)", messageName, len(schema))
+		return schema, nil
+	}
+
+	// Handle LocalOnly mode: only check local files, never fetch from BSR
+	if s.schemaSourceMode == config.LocalOnly {
+		logger.Debug("LocalOnly mode: checking local filesystem for schema: %s", messageName)
+		schema, found := s.checkLocalSchema(messageName)
+		if !found {
+			logger.Error("Schema not found locally for %s and LocalOnly mode is enabled", messageName)
+			return nil, fmt.Errorf("schema not found locally for %s", messageName)
+		}
+		logger.Info("Schema found locally for %s (size: %d bytes)", messageName, len(schema))
+		return schema, nil
+	}
+
+	// Handle LocalThenBSR mode (default): check local first, then fallback to BSR
+	logger.Debug("LocalThenBSR mode: checking local filesystem first for schema: %s", messageName)
 	schema, found := s.checkLocalSchema(messageName)
 	if found {
 		logger.Info("Schema found locally for %s (size: %d bytes)", messageName, len(schema))
@@ -113,7 +151,21 @@ func (s *SchemaService) fetchFromBSR(messageName string) ([]byte, error) {
 	url := s.buildBSRURL(messageName)
 	logger.Debug("Fetching from BSR URL: %s", url)
 
-	resp, err := s.httpClient.Get(url)
+	// Create HTTP request
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		logger.Error("Failed to create HTTP request for URL %s: %v", url, err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Add Bearer token authentication if available
+	if s.bsrToken != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.bsrToken))
+		logger.Debug("Added Bearer token to BSR request")
+	}
+
+	// Execute the request
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		logger.Error("HTTP GET request failed for URL %s: %v", url, err)
 		return nil, fmt.Errorf("HTTP request failed: %w", err)
@@ -173,7 +225,7 @@ func (s *SchemaService) ListProtoFiles() ([]ProtoFile, error) {
 	var walkMessages func(md protoreflect.MessageDescriptor)
 	walkMessages = func(md protoreflect.MessageDescriptor) {
 		fullyQualifiedName := string(md.FullName())
-		
+
 		// Only include messages in the "proto" namespace
 		if !strings.HasPrefix(fullyQualifiedName, "proto.") {
 			logger.Debug("Skipping message not in proto namespace: %s", fullyQualifiedName)
@@ -184,19 +236,19 @@ func (s *SchemaService) ListProtoFiles() ([]ProtoFile, error) {
 			}
 			return
 		}
-		
+
 		// Skip if we've already seen this message
 		if seenMessages[fullyQualifiedName] {
 			return
 		}
 		seenMessages[fullyQualifiedName] = true
-		
+
 		// Get the message name (last part of the fully qualified name)
 		name := string(md.Name())
-		
+
 		// Extract description - try to get from source locations if available
 		description := ""
-		
+
 		// Try to get description from the file descriptor's source locations
 		// Note: Source code info may not always be available in compiled descriptors
 		if parent := md.Parent(); parent != nil {
@@ -223,7 +275,7 @@ func (s *SchemaService) ListProtoFiles() ([]ProtoFile, error) {
 				}
 			}
 		}
-		
+
 		// If no description found, use a default based on the message name
 		if description == "" {
 			description = fmt.Sprintf("%s message", s.formatMessageName(name))
@@ -236,7 +288,7 @@ func (s *SchemaService) ListProtoFiles() ([]ProtoFile, error) {
 		})
 
 		logger.Debug("Found proto message: %s (%s)", fullyQualifiedName, name)
-		
+
 		// Recursively process nested messages
 		nested := md.Messages()
 		for i := 0; i < nested.Len(); i++ {

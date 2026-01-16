@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"validation-service/backend/config"
 	"validation-service/backend/handler"
 	"validation-service/backend/logger"
 	"validation-service/backend/proto"
@@ -74,6 +75,12 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// Load environment variables from .env file
+	// This must be called before any code that reads environment variables
+	if err := config.LoadEnv(); err != nil {
+		// Non-fatal: if .env doesn't exist, we'll use system environment variables
+	}
+
 	// Initialize logger with level from environment variable
 	logger.Init()
 
@@ -102,8 +109,8 @@ func main() {
 
 	// Initialize schema service
 	logger.Debug("Initializing schema service...")
-	schemaService := service.NewSchemaService(bsrOrg, bsrModule, basePath)
-	logger.Info("Schema service initialized successfully")
+	schemaService := service.NewSchemaService(bsrOrg, bsrModule, basePath, config.SCHEMA_SOURCE_MODE)
+	logger.Info("Schema service initialized successfully with mode=%d", config.SCHEMA_SOURCE_MODE)
 
 	// Initialize schema handler
 	logger.Debug("Initializing schema handler...")

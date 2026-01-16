@@ -2,8 +2,8 @@ package logger
 
 import (
 	"log"
-	"os"
 	"strings"
+	"validation-service/backend/config"
 )
 
 // LogLevel represents the severity of a log message
@@ -64,10 +64,7 @@ func GetLevel() LogLevel {
 // Init initializes the logger with a log level from environment variable
 // Defaults to INFO if LOG_LEVEL is not set or invalid
 func Init() {
-	levelStr := os.Getenv("LOG_LEVEL")
-	if levelStr == "" {
-		levelStr = "INFO"
-	}
+	levelStr := config.GetEnv("LOG_LEVEL", "INFO")
 	currentLevel = ParseLogLevel(levelStr)
 	log.Printf("[INFO] Logger initialized with level: %s", currentLevel.String())
 }
