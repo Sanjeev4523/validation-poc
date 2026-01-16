@@ -66,6 +66,6 @@ message UpdateTask {
   option (buf.validate.message).cel = {
     id: "comment_required_if_blocked",
     message: "comment is required when status is TASK_STATUS_BLOCKED",
-    expression: "this.status != TaskStatus.TASK_STATUS_BLOCKED || has(this.comment)"
+    expression: "this.status != proto.TaskStatus.TASK_STATUS_BLOCKED || has(this.comment)"
   };
 }

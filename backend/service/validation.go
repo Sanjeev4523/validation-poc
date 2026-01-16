@@ -2,6 +2,8 @@ package service
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 	"validation-service/backend/logger"
 
 	"buf.build/go/protovalidate"
@@ -10,6 +12,12 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/dynamicpb"
 )
+
+// ValidationError represents a validation error with both friendly and technical messages
+type ValidationError struct {
+	Friendly  string `json:"friendly"`  // Human-readable message
+	Technical string `json:"technical"` // Original technical error
+}
 
 // ValidationService handles proto validation using dynamic messages
 type ValidationService struct {
@@ -25,8 +33,8 @@ func NewValidationService(validator protovalidate.Validator) *ValidationService 
 }
 
 // ValidateProto validates a JSON payload against a protobuf message definition
-// Returns success status, array of error messages, and any processing error
-func (s *ValidationService) ValidateProto(schemaName string, jsonPayload []byte) (bool, []string, error) {
+// Returns success status, array of validation errors, and any processing error
+func (s *ValidationService) ValidateProto(schemaName string, jsonPayload []byte) (bool, []ValidationError, error) {
 	logger.Debug("ValidateProto called for schemaName=%s", schemaName)
 
 	// Step 1: Find message descriptor in global registry
@@ -62,13 +70,19 @@ func (s *ValidationService) ValidateProto(schemaName string, jsonPayload []byte)
 		logger.Debug("Validation failed for schemaName=%s: %v", schemaName, err)
 
 		// Step 6: Collect validation errors
-		var errors []string
+		var errors []ValidationError
 		if validationErr, ok := err.(*protovalidate.ValidationError); ok {
 			// protovalidate.ValidationError contains detailed error information
 			errors = s.collectValidationErrors(validationErr)
 		} else {
 			// Fallback to simple error message
-			errors = []string{err.Error()}
+			technical := err.Error()
+			errors = []ValidationError{
+				{
+					Friendly:  s.makeFriendlyError(technical),
+					Technical: technical,
+				},
+			}
 		}
 
 		logger.Info("Validation failed for schemaName=%s with %d error(s)", schemaName, len(errors))
@@ -76,43 +90,138 @@ func (s *ValidationService) ValidateProto(schemaName string, jsonPayload []byte)
 	}
 
 	logger.Info("Validation succeeded for schemaName=%s", schemaName)
-	return true, []string{}, nil
+	return true, []ValidationError{}, nil
 }
 
-// collectValidationErrors extracts error messages from a ValidationError
-func (s *ValidationService) collectValidationErrors(err *protovalidate.ValidationError) []string {
-	var errors []string
+// collectValidationErrors extracts error messages from a ValidationError and formats them
+func (s *ValidationService) collectValidationErrors(err *protovalidate.ValidationError) []ValidationError {
+	var errors []ValidationError
 
 	// Add the main violation message
 	if err.Violations != nil {
 		for _, violation := range err.Violations {
 			// Access fields through the Proto field
 			proto := violation.Proto
+			technical := violation.String()
+			var friendly string
+
 			if proto == nil {
-				// Fallback to String() method
-				errors = append(errors, violation.String())
-				continue
-			}
-
-			// Get field path and message from the proto
-			fieldPath := protovalidate.FieldPathString(proto.GetField())
-			message := proto.GetMessage()
-
-			if fieldPath != "" {
-				errors = append(errors, fmt.Sprintf("field '%s': %s", fieldPath, message))
-			} else if message != "" {
-				errors = append(errors, message)
+				// Fallback: use technical error as friendly
+				friendly = s.makeFriendlyError(technical)
 			} else {
-				// Fallback to String() method
-				errors = append(errors, violation.String())
+				// Get field path and message from the proto
+				fieldPath := protovalidate.FieldPathString(proto.GetField())
+				message := proto.GetMessage()
+
+				if message != "" {
+					// Use the message from proto definition (this is the friendly message)
+					if fieldPath != "" {
+						friendly = fmt.Sprintf("field '%s': %s", fieldPath, message)
+					} else {
+						friendly = message
+					}
+				} else if fieldPath != "" {
+					// No message, but we have a field path
+					friendly = s.makeFriendlyError(technical)
+				} else {
+					// Fallback: try to make friendly from technical
+					friendly = s.makeFriendlyError(technical)
+				}
 			}
+
+			errors = append(errors, ValidationError{
+				Friendly:  friendly,
+				Technical: technical,
+			})
 		}
 	}
 
 	// If no violations found, use the error message itself
 	if len(errors) == 0 {
-		errors = []string{err.Error()}
+		technical := err.Error()
+		errors = []ValidationError{
+			{
+				Friendly:  s.makeFriendlyError(technical),
+				Technical: technical,
+			},
+		}
 	}
 
 	return errors
+}
+
+// makeFriendlyError attempts to create a human-friendly error message from a technical error
+func (s *ValidationService) makeFriendlyError(technical string) string {
+	// Check if it's a CEL compilation error
+	if strings.Contains(technical, "compilation error") {
+		// Try to extract constraint ID and create a friendly message
+		constraintID := s.extractConstraintID(technical)
+		if constraintID != "" {
+			// Try to create a readable message from constraint ID
+			friendly := s.constraintIDToFriendly(constraintID)
+			if friendly != "" {
+				return friendly
+			}
+		}
+		// If we can't parse it, try to clean up the error message
+		return s.cleanupTechnicalError(technical)
+	}
+
+	// For other errors, try to clean them up
+	return s.cleanupTechnicalError(technical)
+}
+
+// extractConstraintID extracts the constraint ID from a CEL compilation error
+func (s *ValidationService) extractConstraintID(errorMsg string) string {
+	// Pattern: "compilation error: failed to compile expression <constraint_id>:"
+	re := regexp.MustCompile(`compilation error:.*expression\s+([a-zA-Z_][a-zA-Z0-9_]*):`)
+	matches := re.FindStringSubmatch(errorMsg)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+	return ""
+}
+
+// constraintIDToFriendly converts a constraint ID to a friendly message
+func (s *ValidationService) constraintIDToFriendly(constraintID string) string {
+	// Map known constraint IDs to friendly messages
+	// This can be extended with more mappings
+	constraintMap := map[string]string{
+		"comment_required_if_blocked": "comment is required when status is TASK_STATUS_BLOCKED",
+	}
+
+	if friendly, ok := constraintMap[constraintID]; ok {
+		return friendly
+	}
+
+	// Try to create a friendly message from the constraint ID
+	// Convert snake_case to readable text
+	readable := strings.ReplaceAll(constraintID, "_", " ")
+	readable = strings.ToLower(readable)
+	return fmt.Sprintf("Validation failed: %s", readable)
+}
+
+// cleanupTechnicalError attempts to clean up technical error messages
+func (s *ValidationService) cleanupTechnicalError(technical string) string {
+	// Remove common technical prefixes and suffixes
+	cleaned := technical
+
+	// Remove "ERROR:" prefix if present
+	cleaned = regexp.MustCompile(`(?i)^ERROR:\s*`).ReplaceAllString(cleaned, "")
+
+	// Remove line number references like "<input>:1:16:"
+	cleaned = regexp.MustCompile(`<input>:\d+:\d+:\s*`).ReplaceAllString(cleaned, "")
+
+	// Remove "(in container '')" suffix
+	cleaned = regexp.MustCompile(`\s*\(in container '[^']*'\)`).ReplaceAllString(cleaned, "")
+
+	// Trim whitespace
+	cleaned = strings.TrimSpace(cleaned)
+
+	// If cleaned is empty or same as original, return original
+	if cleaned == "" || cleaned == technical {
+		return technical
+	}
+
+	return cleaned
 }

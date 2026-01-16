@@ -40,9 +40,14 @@ export async function fetchSchema(fullyQualifiedName: string): Promise<JSONSchem
   }
 }
 
+export interface ValidationError {
+  friendly: string;  // Human-readable message
+  technical: string;  // Original technical error
+}
+
 export interface ValidateProtoResponse {
   success: boolean;
-  errors: string[];
+  errors: ValidationError[];
 }
 
 export async function validateProto(

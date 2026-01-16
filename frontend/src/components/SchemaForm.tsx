@@ -153,10 +153,12 @@ export function SchemaForm({ fullyQualifiedName }: SchemaFormProps) {
       setValidationResult(result);
     } catch (err) {
       const apiError = err as ApiError;
+      const errorMessage = apiError.message || 'Failed to validate proto';
       const result: ValidationResult = {
         valid: false,
         data: formData,
-        apiErrors: [apiError.message || 'Failed to validate proto'],
+        // Use string format for API errors (catchall)
+        apiErrors: [errorMessage],
         validationType: 'proto',
       };
       setValidationResult(result);
@@ -218,10 +220,12 @@ export function SchemaForm({ fullyQualifiedName }: SchemaFormProps) {
         setValidationResult(result);
       } catch (protoErr) {
         const apiError = protoErr as ApiError;
+        const errorMessage = apiError.message || 'Failed to validate proto';
         const result: ValidationResult = {
           valid: false,
           data: formData,
-          apiErrors: [apiError.message || 'Failed to validate proto'],
+          // Use string format for API errors (catchall)
+          apiErrors: [errorMessage],
           validationType: 'both',
           jsonValid: jsonValid,
           protoValid: false,

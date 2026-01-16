@@ -217,13 +217,13 @@ const file_proto_task_proto_rawDesc = "" +
 	"\vdescription\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xe8\aR\vdescription\x12@\n" +
 	"\ttimestamp\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xbaH\x03\xc8\x01\x01R\ttimestamp\x128\n" +
 	"\x06status\x18\x04 \x01(\x0e2\x11.proto.TaskStatusB\r\xbaH\n" +
-	"\xc8\x01\x01\x82\x01\x04\x10\x01 \x00R\x06status\"\x9e\x02\n" +
+	"\xc8\x01\x01\x82\x01\x04\x10\x01 \x00R\x06status\"\xa4\x02\n" +
 	"\n" +
 	"UpdateTask\x128\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x11.proto.TaskStatusB\r\xbaH\n" +
 	"\xc8\x01\x01\x82\x01\x04\x10\x01 \x00R\x06status\x12'\n" +
-	"\acomment\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xe8\aH\x00R\acomment\x88\x01\x01:\xa0\x01\xbaH\x9c\x01\x1a\x99\x01\n" +
-	"\x1bcomment_required_if_blocked\x126comment is required when status is TASK_STATUS_BLOCKED\x1aBthis.status != TaskStatus.TASK_STATUS_BLOCKED || has(this.comment)B\n" +
+	"\acomment\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xe8\aH\x00R\acomment\x88\x01\x01:\xa6\x01\xbaH\xa2\x01\x1a\x9f\x01\n" +
+	"\x1bcomment_required_if_blocked\x126comment is required when status is TASK_STATUS_BLOCKED\x1aHthis.status != proto.TaskStatus.TASK_STATUS_BLOCKED || has(this.comment)B\n" +
 	"\n" +
 	"\b_comment*\x90\x01\n" +
 	"\n" +

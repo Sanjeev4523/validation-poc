@@ -13,6 +13,12 @@ export interface ApiError {
   statusCode?: number;
 }
 
+// Structured validation error with friendly and technical messages
+export interface ValidationError {
+  friendly: string;  // Human-readable message
+  technical: string;  // Original technical error
+}
+
 export interface ValidationResult {
   valid: boolean;
   data: any;
@@ -21,8 +27,9 @@ export interface ValidationResult {
     property: string;
     message: string;
   }>;
-  // Proto validation errors (simple string array from API)
-  apiErrors?: string[];
+  // Proto validation errors (structured format with friendly and technical)
+  // Also supports legacy string format for backward compatibility
+  apiErrors?: (ValidationError | string)[];
   // Track which validation type was run
   validationType?: 'json' | 'proto' | 'both';
   // For combined validation, track individual results

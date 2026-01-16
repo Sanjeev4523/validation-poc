@@ -27,8 +27,8 @@ type ValidateProtoRequest struct {
 
 // ValidateProtoResponse represents the response payload
 type ValidateProtoResponse struct {
-	Success bool     `json:"success"`
-	Errors  []string `json:"errors"`
+	Success bool                        `json:"success"`
+	Errors  []service.ValidationError `json:"errors"`
 }
 
 // ValidateProto handles POST /api/v1/validate-proto
