@@ -1,1 +1,77 @@
 @import "tailwindcss";
+
+/* Custom styles for react-jsonschema-form - Dark Theme */
+.rjsf {
+  @apply space-y-4;
+}
+
+.rjsf .form-group {
+  @apply mb-4;
+}
+
+.rjsf label {
+  @apply block text-sm font-medium text-gray-300 mb-1;
+}
+
+.rjsf input[type="text"],
+.rjsf input[type="number"],
+.rjsf input[type="email"],
+.rjsf input[type="url"],
+.rjsf input[type="date"],
+.rjsf input[type="time"],
+.rjsf input[type="datetime-local"],
+.rjsf textarea,
+.rjsf select {
+  @apply block w-full px-3 py-2 bg-gray-900 border border-gray-700 text-gray-200 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm;
+}
+
+.rjsf input[type="text"]:focus,
+.rjsf input[type="number"]:focus,
+.rjsf input[type="email"]:focus,
+.rjsf input[type="url"]:focus,
+.rjsf input[type="date"]:focus,
+.rjsf input[type="time"]:focus,
+.rjsf input[type="datetime-local"]:focus,
+.rjsf textarea:focus,
+.rjsf select:focus {
+  @apply bg-gray-900;
+}
+
+.rjsf .field-error {
+  @apply text-red-400 text-sm mt-1;
+}
+
+.rjsf .error-detail {
+  @apply text-red-400 text-sm;
+}
+
+.rjsf .help-block {
+  @apply text-gray-400 text-sm mt-1;
+}
+
+.rjsf .field-description {
+  @apply text-gray-400 text-sm mt-1;
+}
+
+.rjsf .required {
+  @apply text-red-400;
+}
+
+.rjsf .form-control {
+  @apply w-full;
+}
+
+.rjsf button[type="submit"] {
+  @apply hidden;
+}
+
+/* Dark theme for checkbox and radio */
+.rjsf input[type="checkbox"],
+.rjsf input[type="radio"] {
+  @apply bg-gray-900 border-gray-700 text-blue-600 focus:ring-blue-500;
+}
+
+.rjsf input[type="checkbox"]:checked,
+.rjsf input[type="radio"]:checked {
+  @apply bg-blue-600 border-blue-600;
+}
