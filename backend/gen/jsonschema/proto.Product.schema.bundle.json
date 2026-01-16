@@ -1,0 +1,59 @@
+{
+  "$defs": {
+    "proto.Product.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Product represents a product with name, price, and quantity",
+      "properties": {
+        "name": {
+          "description": "name is required, 1-100 characters",
+          "maxLength": 100,
+          "minLength": 1,
+          "type": "string"
+        },
+        "price": {
+          "anyOf": [
+            {
+              "minimum": 0.01,
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "price must be positive (minimum 0.01)"
+        },
+        "quantity": {
+          "anyOf": [
+            {
+              "exclusiveMaximum": 2147483648,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "description": "quantity must be at least 1"
+        }
+      },
+      "required": [
+        "name",
+        "price",
+        "quantity"
+      ],
+      "title": "Product",
+      "type": "object"
+    }
+  },
+  "$id": "proto.Product.schema.bundle.json",
+  "$ref": "#/$defs/proto.Product.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,46 @@
+{
+  "$defs": {
+    "proto.PaymentInfo.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "PaymentInfo demonstrates enum-based conditional validation",
+      "properties": {
+        "bank_account": {
+          "description": "bankAccount is required for BANK_TRANSFER",
+          "maxLength": 34,
+          "minLength": 10,
+          "type": "string"
+        },
+        "card_number": {
+          "description": "cardNumber is required for CREDIT_CARD and DEBIT_CARD",
+          "pattern": "^\\d{13,19}$",
+          "type": "string"
+        },
+        "payment_method": {
+          "description": "paymentMethod determines which additional fields are required",
+          "enum": [
+            "PAYMENT_METHOD_CREDIT_CARD",
+            "PAYMENT_METHOD_DEBIT_CARD",
+            "PAYMENT_METHOD_PAYPAL",
+            "PAYMENT_METHOD_BANK_TRANSFER"
+          ],
+          "title": "Payment Method",
+          "type": "string"
+        },
+        "paypal_email": {
+          "description": "paypalEmail is required for PAYPAL",
+          "format": "email",
+          "type": "string"
+        }
+      },
+      "required": [
+        "payment_method"
+      ],
+      "title": "Payment Info",
+      "type": "object"
+    }
+  },
+  "$id": "proto.PaymentInfo.schema.strict.bundle.json",
+  "$ref": "#/$defs/proto.PaymentInfo.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

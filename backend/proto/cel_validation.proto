@@ -1,0 +1,196 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "validation-service/backend/proto";
+
+import "buf/validate/validate.proto";
+
+// OrderType represents different order types
+enum OrderType {
+  ORDER_TYPE_UNSPECIFIED = 0;
+  ORDER_TYPE_STANDARD = 1;
+  ORDER_TYPE_EXPRESS = 2;
+  ORDER_TYPE_PRIORITY = 3;
+}
+
+// ConditionalOrder demonstrates conditional required fields using CEL
+message ConditionalOrder {
+  // orderType determines if expressFee is required
+  OrderType order_type = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // expressFee is required when orderType is EXPRESS
+  optional double express_fee = 2 [
+    (buf.validate.field).double = {
+      gt: 0.0
+    }
+  ];
+
+  // CEL constraint: expressFee is required when orderType is EXPRESS
+  option (buf.validate.message).cel = {
+    id: "express_fee_required",
+    message: "expressFee is required when orderType is ORDER_TYPE_EXPRESS",
+    expression: "this.order_type != proto.OrderType.ORDER_TYPE_EXPRESS || has(this.express_fee)"
+  };
+}
+
+// AgeRestrictedProduct demonstrates cross-field validation using CEL
+message AgeRestrictedProduct {
+  // productName is required
+  string product_name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1,
+      max_len: 100
+    }
+  ];
+
+  // minAge is the minimum age required to purchase
+  int32 min_age = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32 = {
+      gte: 18,
+      lte: 100
+    }
+  ];
+
+  // userAge is the age of the user attempting to purchase
+  int32 user_age = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32 = {
+      gte: 0,
+      lte: 150
+    }
+  ];
+
+  // CEL constraint: userAge must be greater than or equal to minAge
+  option (buf.validate.message).cel = {
+    id: "age_requirement",
+    message: "userAge must be greater than or equal to minAge",
+    expression: "this.user_age >= this.min_age"
+  };
+}
+
+// DiscountCoupon demonstrates conditional validation based on numeric comparison
+message DiscountCoupon {
+  // couponCode is required
+  string coupon_code = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 3,
+      max_len: 20,
+      pattern: "^[A-Z0-9]+$"  // Uppercase letters and numbers only
+    }
+  ];
+
+  // discountPercent must be between 0 and 100
+  optional double discount_percent = 2 [
+    (buf.validate.field).double = {
+      gte: 0.0,
+      lte: 100.0
+    }
+  ];
+
+  // minPurchase is the minimum purchase amount required
+  double min_purchase = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double = {
+      gt: 0.0
+    }
+  ];
+
+  // CEL constraint: discountPercent is required when minPurchase > 100
+  option (buf.validate.message).cel = {
+    id: "discount_required_for_high_purchase",
+    message: "discountPercent is required when minPurchase is greater than 100",
+    expression: "this.min_purchase <= 100.0 || has(this.discount_percent)"
+  };
+}
+
+// PaymentMethod represents different payment methods
+enum PaymentMethod {
+  PAYMENT_METHOD_UNSPECIFIED = 0;
+  PAYMENT_METHOD_CREDIT_CARD = 1;
+  PAYMENT_METHOD_DEBIT_CARD = 2;
+  PAYMENT_METHOD_PAYPAL = 3;
+  PAYMENT_METHOD_BANK_TRANSFER = 4;
+}
+
+// PaymentInfo demonstrates enum-based conditional validation
+message PaymentInfo {
+  // paymentMethod determines which additional fields are required
+  PaymentMethod payment_method = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // cardNumber is required for CREDIT_CARD and DEBIT_CARD
+  optional string card_number = 2 [
+    (buf.validate.field).string = {
+      pattern: "^\\d{13,19}$"  // 13-19 digits
+    }
+  ];
+
+  // paypalEmail is required for PAYPAL
+  optional string paypal_email = 3 [
+    (buf.validate.field).string.email = true
+  ];
+
+  // bankAccount is required for BANK_TRANSFER
+  optional string bank_account = 4 [
+    (buf.validate.field).string = {
+      min_len: 10,
+      max_len: 34  // IBAN format
+    }
+  ];
+
+  // CEL constraint: cardNumber required for card payments
+  option (buf.validate.message).cel = {
+    id: "card_number_required",
+    message: "cardNumber is required for CREDIT_CARD or DEBIT_CARD payment methods",
+    expression: "(this.payment_method != proto.PaymentMethod.PAYMENT_METHOD_CREDIT_CARD && this.payment_method != proto.PaymentMethod.PAYMENT_METHOD_DEBIT_CARD) || has(this.card_number)"
+  };
+
+  // CEL constraint: paypalEmail required for PAYPAL
+  option (buf.validate.message).cel = {
+    id: "paypal_email_required",
+    message: "paypalEmail is required for PAYPAL payment method",
+    expression: "this.payment_method != proto.PaymentMethod.PAYMENT_METHOD_PAYPAL || has(this.paypal_email)"
+  };
+
+  // CEL constraint: bankAccount required for BANK_TRANSFER
+  option (buf.validate.message).cel = {
+    id: "bank_account_required",
+    message: "bankAccount is required for BANK_TRANSFER payment method",
+    expression: "this.payment_method != proto.PaymentMethod.PAYMENT_METHOD_BANK_TRANSFER || has(this.bank_account)"
+  };
+}
+
+// DateRange demonstrates date comparison validation
+message DateRange {
+  // startDate must be before endDate
+  int64 start_date = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int64 = {
+      gt: 0  // Unix timestamp must be positive
+    }
+  ];
+
+  // endDate must be after startDate
+  int64 end_date = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int64 = {
+      gt: 0
+    }
+  ];
+
+  // CEL constraint: endDate must be greater than startDate
+  option (buf.validate.message).cel = {
+    id: "end_after_start",
+    message: "endDate must be greater than startDate",
+    expression: "this.end_date > this.start_date"
+  };
+}

@@ -1,0 +1,81 @@
+{
+  "$defs": {
+    "proto.OrderItem.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "OrderItem represents an item in an order with conditional validation",
+      "patternProperties": {
+        "^(product_id)$": {
+          "description": "productId is required",
+          "maxLength": 50,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "properties": {
+        "discount": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "pattern": "^-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?$",
+              "type": "string"
+            }
+          ],
+          "description": "discount is optional but required when quantity \u003e 10"
+        },
+        "price": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "price must be positive"
+        },
+        "productId": {
+          "description": "productId is required",
+          "maxLength": 50,
+          "minLength": 1,
+          "type": "string"
+        },
+        "quantity": {
+          "anyOf": [
+            {
+              "maximum": 1000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "description": "quantity must be at least 1"
+        }
+      },
+      "required": [
+        "productId",
+        "quantity",
+        "price"
+      ],
+      "title": "Order Item",
+      "type": "object"
+    }
+  },
+  "$id": "proto.OrderItem.jsonschema.bundle.json",
+  "$ref": "#/$defs/proto.OrderItem.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

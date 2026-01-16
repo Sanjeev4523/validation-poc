@@ -1,0 +1,46 @@
+{
+  "$id": "proto.ComplexOrder.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ComplexOrder demonstrates complex nested validation with CEL",
+  "properties": {
+    "customer": {
+      "$ref": "proto.CustomerInfo.jsonschema.strict.json",
+      "description": "customer information"
+    },
+    "items": {
+      "description": "order items (at least 1 required)",
+      "items": {
+        "$ref": "proto.OrderItem.jsonschema.strict.json"
+      },
+      "type": "array"
+    },
+    "shipping": {
+      "$ref": "proto.ShippingInfo.jsonschema.strict.json",
+      "description": "shipping information"
+    },
+    "total": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity"
+          ],
+          "type": "string"
+        }
+      ],
+      "description": "total must match sum of items"
+    }
+  },
+  "required": [
+    "customer",
+    "items",
+    "shipping",
+    "total"
+  ],
+  "title": "Complex Order",
+  "type": "object"
+}

@@ -1,0 +1,89 @@
+{
+  "$id": "proto.ConditionalOrder.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ConditionalOrder demonstrates conditional required fields using CEL",
+  "patternProperties": {
+    "^(expressFee)$": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "expressFee is required when orderType is EXPRESS"
+    },
+    "^(orderType)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "ORDER_TYPE_STANDARD",
+            "ORDER_TYPE_EXPRESS",
+            "ORDER_TYPE_PRIORITY"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 3,
+          "minimum": 1,
+          "type": "integer"
+        }
+      ],
+      "description": "orderType determines if expressFee is required",
+      "title": "Order Type"
+    }
+  },
+  "properties": {
+    "express_fee": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "expressFee is required when orderType is EXPRESS"
+    },
+    "order_type": {
+      "anyOf": [
+        {
+          "enum": [
+            "ORDER_TYPE_STANDARD",
+            "ORDER_TYPE_EXPRESS",
+            "ORDER_TYPE_PRIORITY"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 3,
+          "minimum": 1,
+          "type": "integer"
+        }
+      ],
+      "description": "orderType determines if expressFee is required",
+      "title": "Order Type"
+    }
+  },
+  "required": [
+    "order_type"
+  ],
+  "title": "Conditional Order",
+  "type": "object"
+}

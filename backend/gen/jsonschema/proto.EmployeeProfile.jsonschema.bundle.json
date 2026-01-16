@@ -1,0 +1,190 @@
+{
+  "$defs": {
+    "google.protobuf.Timestamp.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "proto.EmergencyContact.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "EmergencyContact represents emergency contact information",
+      "properties": {
+        "name": {
+          "description": "name is required",
+          "maxLength": 100,
+          "minLength": 2,
+          "type": "string"
+        },
+        "phone": {
+          "default": "",
+          "description": "phone is required when relationship is SPOUSE",
+          "pattern": "^\\+?[1-9]\\d{1,14}$",
+          "type": "string"
+        },
+        "relationship": {
+          "anyOf": [
+            {
+              "enum": [
+                "RELATIONSHIP_SPOUSE",
+                "RELATIONSHIP_PARENT",
+                "RELATIONSHIP_SIBLING",
+                "RELATIONSHIP_FRIEND",
+                "RELATIONSHIP_OTHER"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 5,
+              "minimum": 1,
+              "type": "integer"
+            }
+          ],
+          "description": "relationship is required",
+          "title": "Relationship"
+        }
+      },
+      "required": [
+        "name",
+        "relationship"
+      ],
+      "title": "Emergency Contact",
+      "type": "object"
+    },
+    "proto.EmployeeProfile.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "EmployeeProfile demonstrates deep nesting with multiple CEL constraints",
+      "patternProperties": {
+        "^(emergency_contact)$": {
+          "$ref": "#/$defs/proto.EmergencyContact.jsonschema.json",
+          "description": "emergencyContact is required"
+        },
+        "^(personal_info)$": {
+          "$ref": "#/$defs/proto.PersonalInfo.jsonschema.json",
+          "description": "personalInfo is required"
+        },
+        "^(work_info)$": {
+          "$ref": "#/$defs/proto.WorkInfo.jsonschema.json",
+          "description": "workInfo is required"
+        }
+      },
+      "properties": {
+        "emergencyContact": {
+          "$ref": "#/$defs/proto.EmergencyContact.jsonschema.json",
+          "description": "emergencyContact is required"
+        },
+        "personalInfo": {
+          "$ref": "#/$defs/proto.PersonalInfo.jsonschema.json",
+          "description": "personalInfo is required"
+        },
+        "workInfo": {
+          "$ref": "#/$defs/proto.WorkInfo.jsonschema.json",
+          "description": "workInfo is required"
+        }
+      },
+      "required": [
+        "personalInfo",
+        "workInfo",
+        "emergencyContact"
+      ],
+      "title": "Employee Profile",
+      "type": "object"
+    },
+    "proto.PersonalInfo.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "PersonalInfo represents personal information with age validation",
+      "patternProperties": {
+        "^(date_of_birth)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.json",
+          "description": "dateOfBirth is required"
+        }
+      },
+      "properties": {
+        "dateOfBirth": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.json",
+          "description": "dateOfBirth is required"
+        },
+        "email": {
+          "description": "email must be valid",
+          "format": "email",
+          "minLength": 1,
+          "type": "string"
+        },
+        "name": {
+          "description": "name is required",
+          "maxLength": 100,
+          "minLength": 2,
+          "type": "string"
+        },
+        "phone": {
+          "description": "phone must match pattern",
+          "minLength": 1,
+          "pattern": "^\\+?[1-9]\\d{1,14}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "email",
+        "phone",
+        "dateOfBirth"
+      ],
+      "title": "Personal Info",
+      "type": "object"
+    },
+    "proto.WorkInfo.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "WorkInfo represents work-related information",
+      "patternProperties": {
+        "^(start_date)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.json",
+          "description": "startDate must be after dateOfBirth (validated in parent)"
+        }
+      },
+      "properties": {
+        "department": {
+          "description": "department is required",
+          "maxLength": 50,
+          "minLength": 2,
+          "type": "string"
+        },
+        "salary": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "salary must be non-negative"
+        },
+        "startDate": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.json",
+          "description": "startDate must be after dateOfBirth (validated in parent)"
+        }
+      },
+      "required": [
+        "department",
+        "salary",
+        "startDate"
+      ],
+      "title": "Work Info",
+      "type": "object"
+    }
+  },
+  "$id": "proto.EmployeeProfile.jsonschema.bundle.json",
+  "$ref": "#/$defs/proto.EmployeeProfile.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

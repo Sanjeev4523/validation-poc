@@ -1,0 +1,48 @@
+{
+  "$id": "proto.OrderItem.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "OrderItem represents an item in an order with conditional validation",
+  "properties": {
+    "discount": {
+      "description": "discount is optional but required when quantity \u003e 10",
+      "maximum": 100,
+      "minimum": 0,
+      "type": "number"
+    },
+    "price": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity"
+          ],
+          "type": "string"
+        }
+      ],
+      "description": "price must be positive"
+    },
+    "productId": {
+      "description": "productId is required",
+      "maxLength": 50,
+      "minLength": 1,
+      "type": "string"
+    },
+    "quantity": {
+      "description": "quantity must be at least 1",
+      "maximum": 1000,
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "productId",
+    "quantity",
+    "price"
+  ],
+  "title": "Order Item",
+  "type": "object"
+}

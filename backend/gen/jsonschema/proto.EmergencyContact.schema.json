@@ -1,0 +1,47 @@
+{
+  "$id": "proto.EmergencyContact.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "EmergencyContact represents emergency contact information",
+  "properties": {
+    "name": {
+      "description": "name is required",
+      "maxLength": 100,
+      "minLength": 2,
+      "type": "string"
+    },
+    "phone": {
+      "default": "",
+      "description": "phone is required when relationship is SPOUSE",
+      "pattern": "^\\+?[1-9]\\d{1,14}$",
+      "type": "string"
+    },
+    "relationship": {
+      "anyOf": [
+        {
+          "enum": [
+            "RELATIONSHIP_SPOUSE",
+            "RELATIONSHIP_PARENT",
+            "RELATIONSHIP_SIBLING",
+            "RELATIONSHIP_FRIEND",
+            "RELATIONSHIP_OTHER"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 5,
+          "minimum": 1,
+          "type": "integer"
+        }
+      ],
+      "description": "relationship is required",
+      "title": "Relationship"
+    }
+  },
+  "required": [
+    "name",
+    "relationship"
+  ],
+  "title": "Emergency Contact",
+  "type": "object"
+}

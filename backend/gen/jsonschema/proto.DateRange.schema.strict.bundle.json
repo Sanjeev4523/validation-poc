@@ -1,0 +1,30 @@
+{
+  "$defs": {
+    "proto.DateRange.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "DateRange demonstrates date comparison validation",
+      "properties": {
+        "end_date": {
+          "description": "endDate must be after startDate",
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        "start_date": {
+          "description": "startDate must be before endDate",
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start_date",
+        "end_date"
+      ],
+      "title": "Date Range",
+      "type": "object"
+    }
+  },
+  "$id": "proto.DateRange.schema.strict.bundle.json",
+  "$ref": "#/$defs/proto.DateRange.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

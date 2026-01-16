@@ -107,7 +107,7 @@ export function ValidationResults({ result }: ValidationResultsProps) {
             <h4 className="text-sm font-medium text-white mb-2">
               {result.validationType === 'both' ? 'Proto Validation Errors:' : 'Validation Errors:'}
             </h4>
-            <ul className="list-disc list-inside space-y-2">
+            <ul className="space-y-2">
               {result.apiErrors.map((error, index) => {
                 // Handle both structured errors and legacy string errors
                 const isStructured = typeof error === 'object' && 'friendly' in error;
@@ -117,9 +117,10 @@ export function ValidationResults({ result }: ValidationResultsProps) {
                 const showTechnical = isStructured && technical && technical !== friendly;
 
                 return (
-                  <li key={index} className="text-sm text-red-400">
-                    <div className="flex flex-col">
-                      <div className="flex items-start">
+                  <li key={index} className="flex items-start gap-2 text-sm text-red-400">
+                    <span className="flex-shrink-0 mt-0.5 w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
                         <span className="flex-1">{friendly}</span>
                         {showTechnical && (
                           <button
@@ -133,7 +134,7 @@ export function ValidationResults({ result }: ValidationResultsProps) {
                               }
                               setExpandedErrors(newExpanded);
                             }}
-                            className="ml-2 text-xs text-red-300 hover:text-red-200 underline transition-colors"
+                            className="flex-shrink-0 text-xs text-red-300 hover:text-red-200 underline transition-colors"
                           >
                             {isExpanded ? 'Show less ▲' : 'Show more ▼'}
                           </button>

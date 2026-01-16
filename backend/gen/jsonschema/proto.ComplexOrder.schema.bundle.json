@@ -1,0 +1,219 @@
+{
+  "$defs": {
+    "proto.ComplexOrder.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ComplexOrder demonstrates complex nested validation with CEL",
+      "properties": {
+        "customer": {
+          "$ref": "#/$defs/proto.CustomerInfo.schema.json",
+          "description": "customer information"
+        },
+        "items": {
+          "description": "order items (at least 1 required)",
+          "items": {
+            "$ref": "#/$defs/proto.OrderItem.schema.json"
+          },
+          "type": "array"
+        },
+        "shipping": {
+          "$ref": "#/$defs/proto.ShippingInfo.schema.json",
+          "description": "shipping information"
+        },
+        "total": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "total must match sum of items"
+        }
+      },
+      "required": [
+        "customer",
+        "items",
+        "shipping",
+        "total"
+      ],
+      "title": "Complex Order",
+      "type": "object"
+    },
+    "proto.CustomerInfo.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "CustomerInfo represents customer information with nested validations",
+      "properties": {
+        "address": {
+          "default": "",
+          "description": "address is optional but may be required by parent message",
+          "maxLength": 500,
+          "minLength": 10,
+          "type": "string"
+        },
+        "email": {
+          "description": "email must be a valid email",
+          "format": "email",
+          "minLength": 1,
+          "type": "string"
+        },
+        "name": {
+          "description": "name is required",
+          "maxLength": 100,
+          "minLength": 2,
+          "type": "string"
+        },
+        "phone": {
+          "description": "phone must match phone pattern",
+          "minLength": 1,
+          "pattern": "^\\+?[1-9]\\d{1,14}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "email",
+        "phone",
+        "name"
+      ],
+      "title": "Customer Info",
+      "type": "object"
+    },
+    "proto.OrderItem.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "OrderItem represents an item in an order with conditional validation",
+      "patternProperties": {
+        "^(productId)$": {
+          "description": "productId is required",
+          "maxLength": 50,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "properties": {
+        "discount": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "pattern": "^-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?$",
+              "type": "string"
+            }
+          ],
+          "description": "discount is optional but required when quantity \u003e 10"
+        },
+        "price": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "price must be positive"
+        },
+        "product_id": {
+          "description": "productId is required",
+          "maxLength": 50,
+          "minLength": 1,
+          "type": "string"
+        },
+        "quantity": {
+          "anyOf": [
+            {
+              "maximum": 1000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "description": "quantity must be at least 1"
+        }
+      },
+      "required": [
+        "product_id",
+        "quantity",
+        "price"
+      ],
+      "title": "Order Item",
+      "type": "object"
+    },
+    "proto.ShippingInfo.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ShippingInfo represents shipping information with conditional address requirement",
+      "patternProperties": {
+        "^(trackingNumber)$": {
+          "default": "",
+          "description": "trackingNumber is optional",
+          "maxLength": 100,
+          "type": "string"
+        }
+      },
+      "properties": {
+        "address": {
+          "description": "address is required when type is PHYSICAL or EXPRESS",
+          "maxLength": 500,
+          "minLength": 10,
+          "type": "string"
+        },
+        "tracking_number": {
+          "default": "",
+          "description": "trackingNumber is optional",
+          "maxLength": 100,
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "enum": [
+                "SHIPPING_TYPE_DIGITAL",
+                "SHIPPING_TYPE_PHYSICAL",
+                "SHIPPING_TYPE_EXPRESS"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 3,
+              "minimum": 1,
+              "type": "integer"
+            }
+          ],
+          "description": "type determines if address is required",
+          "title": "Shipping Type"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "Shipping Info",
+      "type": "object"
+    }
+  },
+  "$id": "proto.ComplexOrder.schema.bundle.json",
+  "$ref": "#/$defs/proto.ComplexOrder.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

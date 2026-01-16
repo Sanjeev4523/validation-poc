@@ -1,0 +1,17 @@
+{
+  "$id": "proto.ProductList.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ProductList contains a list of products",
+  "properties": {
+    "products": {
+      "description": "products is a repeated field with at least 1 item",
+      "items": {
+        "$ref": "proto.Product.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Product List",
+  "type": "object"
+}

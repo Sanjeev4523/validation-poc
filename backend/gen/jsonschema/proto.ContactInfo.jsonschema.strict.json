@@ -1,0 +1,32 @@
+{
+  "$id": "proto.ContactInfo.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ContactInfo represents contact information with phone and address",
+  "properties": {
+    "address": {
+      "description": "address must be at most 500 characters",
+      "maxLength": 500,
+      "type": "string"
+    },
+    "countryCode": {
+      "description": "country code must be exactly 2 uppercase letters",
+      "maxLength": 2,
+      "minLength": 2,
+      "pattern": "^[A-Z]{2}$",
+      "type": "string"
+    },
+    "phone": {
+      "description": "phone must match phone number pattern (optional)",
+      "pattern": "^\\+?[1-9]\\d{1,14}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "phone",
+    "address",
+    "countryCode"
+  ],
+  "title": "Contact Info",
+  "type": "object"
+}

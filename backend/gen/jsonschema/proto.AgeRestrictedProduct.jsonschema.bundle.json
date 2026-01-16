@@ -1,0 +1,91 @@
+{
+  "$defs": {
+    "proto.AgeRestrictedProduct.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "AgeRestrictedProduct demonstrates cross-field validation using CEL",
+      "patternProperties": {
+        "^(min_age)$": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 18,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "description": "minAge is the minimum age required to purchase"
+        },
+        "^(product_name)$": {
+          "description": "productName is required",
+          "maxLength": 100,
+          "minLength": 1,
+          "type": "string"
+        },
+        "^(user_age)$": {
+          "anyOf": [
+            {
+              "maximum": 150,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "description": "userAge is the age of the user attempting to purchase"
+        }
+      },
+      "properties": {
+        "minAge": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 18,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "description": "minAge is the minimum age required to purchase"
+        },
+        "productName": {
+          "description": "productName is required",
+          "maxLength": 100,
+          "minLength": 1,
+          "type": "string"
+        },
+        "userAge": {
+          "anyOf": [
+            {
+              "maximum": 150,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "description": "userAge is the age of the user attempting to purchase"
+        }
+      },
+      "required": [
+        "productName",
+        "minAge",
+        "userAge"
+      ],
+      "title": "Age Restricted Product",
+      "type": "object"
+    }
+  },
+  "$id": "proto.AgeRestrictedProduct.jsonschema.bundle.json",
+  "$ref": "#/$defs/proto.AgeRestrictedProduct.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

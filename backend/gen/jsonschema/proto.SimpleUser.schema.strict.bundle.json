@@ -1,0 +1,75 @@
+{
+  "$defs": {
+    "proto.ContactInfo.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ContactInfo represents contact information with phone and address",
+      "properties": {
+        "address": {
+          "description": "address must be at most 500 characters",
+          "maxLength": 500,
+          "type": "string"
+        },
+        "country_code": {
+          "description": "country code must be exactly 2 uppercase letters",
+          "maxLength": 2,
+          "minLength": 2,
+          "pattern": "^[A-Z]{2}$",
+          "type": "string"
+        },
+        "phone": {
+          "description": "phone must match phone number pattern (optional)",
+          "pattern": "^\\+?[1-9]\\d{1,14}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "phone",
+        "address",
+        "country_code"
+      ],
+      "title": "Contact Info",
+      "type": "object"
+    },
+    "proto.SimpleUser.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "SimpleUser represents a user with basic string, email, and numeric validations",
+      "properties": {
+        "age": {
+          "description": "age must be between 18 and 120",
+          "maximum": 120,
+          "minimum": 18,
+          "type": "integer"
+        },
+        "contact_info": {
+          "$ref": "#/$defs/proto.ContactInfo.schema.strict.json",
+          "description": "contactInfo is an optional nested message"
+        },
+        "email": {
+          "description": "email must be a valid email format",
+          "format": "email",
+          "minLength": 1,
+          "type": "string"
+        },
+        "name": {
+          "description": "name must be between 3 and 50 characters",
+          "maxLength": 50,
+          "minLength": 3,
+          "pattern": "^[a-zA-Z ]+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "email",
+        "age"
+      ],
+      "title": "Simple User",
+      "type": "object"
+    }
+  },
+  "$id": "proto.SimpleUser.schema.strict.bundle.json",
+  "$ref": "#/$defs/proto.SimpleUser.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

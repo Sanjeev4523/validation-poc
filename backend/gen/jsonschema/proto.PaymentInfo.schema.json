@@ -1,0 +1,87 @@
+{
+  "$id": "proto.PaymentInfo.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "PaymentInfo demonstrates enum-based conditional validation",
+  "patternProperties": {
+    "^(bankAccount)$": {
+      "description": "bankAccount is required for BANK_TRANSFER",
+      "maxLength": 34,
+      "minLength": 10,
+      "type": "string"
+    },
+    "^(cardNumber)$": {
+      "description": "cardNumber is required for CREDIT_CARD and DEBIT_CARD",
+      "pattern": "^\\d{13,19}$",
+      "type": "string"
+    },
+    "^(paymentMethod)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "PAYMENT_METHOD_CREDIT_CARD",
+            "PAYMENT_METHOD_DEBIT_CARD",
+            "PAYMENT_METHOD_PAYPAL",
+            "PAYMENT_METHOD_BANK_TRANSFER"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 4,
+          "minimum": 1,
+          "type": "integer"
+        }
+      ],
+      "description": "paymentMethod determines which additional fields are required",
+      "title": "Payment Method"
+    },
+    "^(paypalEmail)$": {
+      "description": "paypalEmail is required for PAYPAL",
+      "format": "email",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "bank_account": {
+      "description": "bankAccount is required for BANK_TRANSFER",
+      "maxLength": 34,
+      "minLength": 10,
+      "type": "string"
+    },
+    "card_number": {
+      "description": "cardNumber is required for CREDIT_CARD and DEBIT_CARD",
+      "pattern": "^\\d{13,19}$",
+      "type": "string"
+    },
+    "payment_method": {
+      "anyOf": [
+        {
+          "enum": [
+            "PAYMENT_METHOD_CREDIT_CARD",
+            "PAYMENT_METHOD_DEBIT_CARD",
+            "PAYMENT_METHOD_PAYPAL",
+            "PAYMENT_METHOD_BANK_TRANSFER"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 4,
+          "minimum": 1,
+          "type": "integer"
+        }
+      ],
+      "description": "paymentMethod determines which additional fields are required",
+      "title": "Payment Method"
+    },
+    "paypal_email": {
+      "description": "paypalEmail is required for PAYPAL",
+      "format": "email",
+      "type": "string"
+    }
+  },
+  "required": [
+    "payment_method"
+  ],
+  "title": "Payment Info",
+  "type": "object"
+}

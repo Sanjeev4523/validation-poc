@@ -1,0 +1,41 @@
+{
+  "$id": "proto.Warehouse.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Warehouse represents a warehouse with inventory",
+  "properties": {
+    "capacity": {
+      "description": "capacity is the maximum number of items",
+      "exclusiveMaximum": 2147483648,
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "items": {
+      "description": "items is a repeated field",
+      "items": {
+        "$ref": "proto.InventoryItem.schema.strict.json"
+      },
+      "type": "array"
+    },
+    "location": {
+      "description": "location is required",
+      "maxLength": 100,
+      "minLength": 3,
+      "type": "string"
+    },
+    "warehouse_id": {
+      "description": "warehouseId is required",
+      "maxLength": 20,
+      "minLength": 4,
+      "pattern": "^WH-[A-Z0-9]+$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "warehouse_id",
+    "location",
+    "capacity"
+  ],
+  "title": "Warehouse",
+  "type": "object"
+}

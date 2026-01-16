@@ -1,0 +1,44 @@
+{
+  "$defs": {
+    "proto.ConditionalOrder.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "ConditionalOrder demonstrates conditional required fields using CEL",
+      "properties": {
+        "expressFee": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity"
+              ],
+              "type": "string"
+            }
+          ],
+          "description": "expressFee is required when orderType is EXPRESS"
+        },
+        "orderType": {
+          "description": "orderType determines if expressFee is required",
+          "enum": [
+            "ORDER_TYPE_STANDARD",
+            "ORDER_TYPE_EXPRESS",
+            "ORDER_TYPE_PRIORITY"
+          ],
+          "title": "Order Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "orderType"
+      ],
+      "title": "Conditional Order",
+      "type": "object"
+    }
+  },
+  "$id": "proto.ConditionalOrder.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/proto.ConditionalOrder.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

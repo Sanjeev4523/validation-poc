@@ -1,0 +1,38 @@
+{
+  "$id": "proto.PersonalInfo.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "PersonalInfo represents personal information with age validation",
+  "properties": {
+    "dateOfBirth": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.strict.json",
+      "description": "dateOfBirth is required"
+    },
+    "email": {
+      "description": "email must be valid",
+      "format": "email",
+      "minLength": 1,
+      "type": "string"
+    },
+    "name": {
+      "description": "name is required",
+      "maxLength": 100,
+      "minLength": 2,
+      "type": "string"
+    },
+    "phone": {
+      "description": "phone must match pattern",
+      "minLength": 1,
+      "pattern": "^\\+?[1-9]\\d{1,14}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "email",
+    "phone",
+    "dateOfBirth"
+  ],
+  "title": "Personal Info",
+  "type": "object"
+}

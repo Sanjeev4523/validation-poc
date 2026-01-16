@@ -1,11 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ProtoFileList } from './components/ProtoFileList';
 import { SchemaForm } from './components/SchemaForm';
-import { protoFiles } from './config/protoFiles';
-import type { ProtoFile } from './types';
+import { fetchProtoFiles } from './services/api';
+import type { ProtoFile, ApiError } from './types';
 
 function App() {
   const [selectedProto, setSelectedProto] = useState<ProtoFile | null>(null);
+  const [protoFiles, setProtoFiles] = useState<ProtoFile[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadProtoFiles = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const files = await fetchProtoFiles();
+        setProtoFiles(files);
+      } catch (err) {
+        const apiError = err as ApiError;
+        setError(apiError.message || 'Failed to load proto files');
+        console.error('Error fetching proto files:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProtoFiles();
+  }, []);
 
   const handleSelectProto = (protoFile: ProtoFile) => {
     setSelectedProto(protoFile);
@@ -23,11 +45,42 @@ function App() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
-            <ProtoFileList
-              protoFiles={protoFiles}
-              selectedFullyQualifiedName={selectedProto?.fullyQualifiedName}
-              onSelect={handleSelectProto}
-            />
+            {loading ? (
+              <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                <p className="text-gray-400 text-sm mt-4">Loading proto files...</p>
+              </div>
+            ) : error ? (
+              <div className="bg-gray-800 border border-red-700 rounded-lg p-8 text-center">
+                <svg
+                  className="mx-auto h-8 w-8 text-red-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <h3 className="mt-4 text-lg font-medium text-white">Error Loading Proto Files</h3>
+                <p className="mt-2 text-sm text-red-400">{error}</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <ProtoFileList
+                protoFiles={protoFiles}
+                selectedFullyQualifiedName={selectedProto?.fullyQualifiedName}
+                onSelect={handleSelectProto}
+              />
+            )}
           </div>
 
           <div className="lg:col-span-2">

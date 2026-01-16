@@ -1,0 +1,76 @@
+{
+  "$defs": {
+    "proto.InventoryItem.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "InventoryItem represents an inventory item with validation",
+      "patternProperties": {
+        "^(item_id)$": {
+          "description": "itemId is required",
+          "maxLength": 20,
+          "minLength": 3,
+          "pattern": "^[A-Z0-9-]+$",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "itemId": {
+          "description": "itemId is required",
+          "maxLength": 20,
+          "minLength": 3,
+          "pattern": "^[A-Z0-9-]+$",
+          "type": "string"
+        },
+        "name": {
+          "description": "name is required",
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        "price": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "price must be positive"
+        },
+        "quantity": {
+          "anyOf": [
+            {
+              "exclusiveMaximum": 2147483648,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "description": "quantity must be non-negative"
+        }
+      },
+      "required": [
+        "itemId",
+        "name",
+        "quantity",
+        "price"
+      ],
+      "title": "Inventory Item",
+      "type": "object"
+    }
+  },
+  "$id": "proto.InventoryItem.jsonschema.bundle.json",
+  "$ref": "#/$defs/proto.InventoryItem.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

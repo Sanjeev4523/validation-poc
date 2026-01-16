@@ -1,0 +1,42 @@
+{
+  "$id": "proto.DiscountCoupon.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "DiscountCoupon demonstrates conditional validation based on numeric comparison",
+  "properties": {
+    "couponCode": {
+      "description": "couponCode is required",
+      "maxLength": 20,
+      "minLength": 3,
+      "pattern": "^[A-Z0-9]+$",
+      "type": "string"
+    },
+    "discountPercent": {
+      "description": "discountPercent must be between 0 and 100",
+      "maximum": 100,
+      "minimum": 0,
+      "type": "number"
+    },
+    "minPurchase": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity"
+          ],
+          "type": "string"
+        }
+      ],
+      "description": "minPurchase is the minimum purchase amount required"
+    }
+  },
+  "required": [
+    "couponCode",
+    "minPurchase"
+  ],
+  "title": "Discount Coupon",
+  "type": "object"
+}

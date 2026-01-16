@@ -1,0 +1,27 @@
+{
+  "$id": "proto.EmployeeProfile.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "EmployeeProfile demonstrates deep nesting with multiple CEL constraints",
+  "properties": {
+    "emergency_contact": {
+      "$ref": "proto.EmergencyContact.schema.strict.json",
+      "description": "emergencyContact is required"
+    },
+    "personal_info": {
+      "$ref": "proto.PersonalInfo.schema.strict.json",
+      "description": "personalInfo is required"
+    },
+    "work_info": {
+      "$ref": "proto.WorkInfo.schema.strict.json",
+      "description": "workInfo is required"
+    }
+  },
+  "required": [
+    "personal_info",
+    "work_info",
+    "emergency_contact"
+  ],
+  "title": "Employee Profile",
+  "type": "object"
+}

@@ -1,0 +1,52 @@
+{
+  "$defs": {
+    "google.protobuf.Timestamp.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "proto.WorkInfo.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "WorkInfo represents work-related information",
+      "properties": {
+        "department": {
+          "description": "department is required",
+          "maxLength": 50,
+          "minLength": 2,
+          "type": "string"
+        },
+        "salary": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity"
+              ],
+              "type": "string"
+            }
+          ],
+          "description": "salary must be non-negative"
+        },
+        "startDate": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.strict.json",
+          "description": "startDate must be after dateOfBirth (validated in parent)"
+        }
+      },
+      "required": [
+        "department",
+        "salary",
+        "startDate"
+      ],
+      "title": "Work Info",
+      "type": "object"
+    }
+  },
+  "$id": "proto.WorkInfo.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/proto.WorkInfo.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

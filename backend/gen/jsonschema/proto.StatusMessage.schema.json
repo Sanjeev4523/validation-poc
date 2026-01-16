@@ -1,0 +1,39 @@
+{
+  "$id": "proto.StatusMessage.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "StatusMessage demonstrates enum validation",
+  "properties": {
+    "message": {
+      "default": "",
+      "description": "message is required when status is SUSPENDED",
+      "maxLength": 500,
+      "type": "string"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "enum": [
+            "STATUS_ACTIVE",
+            "STATUS_INACTIVE",
+            "STATUS_PENDING",
+            "STATUS_SUSPENDED"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 4,
+          "minimum": 1,
+          "type": "integer"
+        }
+      ],
+      "description": "status must be a defined enum value (not UNSPECIFIED)",
+      "title": "Status"
+    }
+  },
+  "required": [
+    "status"
+  ],
+  "title": "Status Message",
+  "type": "object"
+}

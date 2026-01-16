@@ -1,0 +1,174 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "validation-service/backend/proto";
+
+import "buf/validate/validate.proto";
+
+// SimpleUser represents a user with basic string, email, and numeric validations
+message SimpleUser {
+  // name must be between 3 and 50 characters
+  string name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 3,
+      max_len: 50,
+      pattern: "^[a-zA-Z ]+$"  // Only letters and spaces
+    }
+  ];
+
+  // email must be a valid email format
+  string email = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.email = true
+  ];
+
+  // age must be between 18 and 120
+  int32 age = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32 = {
+      gte: 18,
+      lte: 120
+    }
+  ];
+
+  // contactInfo is an optional nested message
+  ContactInfo contact_info = 4;
+}
+
+// ContactInfo represents contact information with phone and address
+message ContactInfo {
+  // phone must match phone number pattern (optional)
+  string phone = 1 [
+    (buf.validate.field).string = {
+      pattern: "^\\+?[1-9]\\d{1,14}$"  // E.164 format
+    }
+  ];
+
+  // address must be at most 500 characters
+  string address = 2 [
+    (buf.validate.field).string.max_len = 500
+  ];
+
+  // country code must be exactly 2 uppercase letters
+  string country_code = 3 [
+    (buf.validate.field).string = {
+      len: 2,
+      pattern: "^[A-Z]{2}$"
+    }
+  ];
+}
+
+// Product represents a product with name, price, and quantity
+message Product {
+  // name is required, 1-100 characters
+  string name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1,
+      max_len: 100
+    }
+  ];
+
+  // price must be positive (minimum 0.01)
+  double price = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double = {
+      gte: 0.01
+    }
+  ];
+
+  // quantity must be at least 1
+  int32 quantity = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32 = {
+      gte: 1
+    }
+  ];
+}
+
+// ProductList contains a list of products
+message ProductList {
+  // products is a repeated field with at least 1 item
+  repeated Product products = 1 [
+    (buf.validate.field).repeated = {
+      min_items: 1,
+      max_items: 100
+    }
+  ];
+}
+
+// Status represents different status types
+enum Status {
+  STATUS_UNSPECIFIED = 0;
+  STATUS_ACTIVE = 1;
+  STATUS_INACTIVE = 2;
+  STATUS_PENDING = 3;
+  STATUS_SUSPENDED = 4;
+}
+
+// StatusMessage demonstrates enum validation
+message StatusMessage {
+  // status must be a defined enum value (not UNSPECIFIED)
+  Status status = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true,
+      not_in: [0]  // STATUS_UNSPECIFIED not allowed
+    }
+  ];
+
+  // message is required when status is SUSPENDED
+  string message = 2 [
+    (buf.validate.field).string.max_len = 500
+  ];
+}
+
+// NumericTypes demonstrates various numeric validations
+message NumericTypes {
+  // int32_value must be between -1000 and 1000
+  int32 int32_value = 1 [
+    (buf.validate.field).int32 = {
+      gte: -1000,
+      lte: 1000
+    }
+  ];
+
+  // int64_value must be positive
+  int64 int64_value = 2 [
+    (buf.validate.field).int64 = {
+      gt: 0
+    }
+  ];
+
+  // float_value must be between 0.0 and 1.0
+  float float_value = 3 [
+    (buf.validate.field).float = {
+      gte: 0.0,
+      lte: 1.0
+    }
+  ];
+
+  // double_value must be between -100.0 and 100.0
+  double double_value = 4 [
+    (buf.validate.field).double = {
+      gte: -100.0,
+      lte: 100.0
+    }
+  ];
+
+  // uint32_value must be at most 10000
+  uint32 uint32_value = 5 [
+    (buf.validate.field).uint32 = {
+      lte: 10000
+    }
+  ];
+
+  // uint64_value must be at least 1
+  uint64 uint64_value = 6 [
+    (buf.validate.field).uint64 = {
+      gte: 1
+    }
+  ];
+}

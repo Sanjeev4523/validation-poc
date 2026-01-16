@@ -1,0 +1,52 @@
+{
+  "$id": "proto.ShippingInfo.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ShippingInfo represents shipping information with conditional address requirement",
+  "patternProperties": {
+    "^(tracking_number)$": {
+      "default": "",
+      "description": "trackingNumber is optional",
+      "maxLength": 100,
+      "type": "string"
+    }
+  },
+  "properties": {
+    "address": {
+      "description": "address is required when type is PHYSICAL or EXPRESS",
+      "maxLength": 500,
+      "minLength": 10,
+      "type": "string"
+    },
+    "trackingNumber": {
+      "default": "",
+      "description": "trackingNumber is optional",
+      "maxLength": 100,
+      "type": "string"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "enum": [
+            "SHIPPING_TYPE_DIGITAL",
+            "SHIPPING_TYPE_PHYSICAL",
+            "SHIPPING_TYPE_EXPRESS"
+          ],
+          "type": "string"
+        },
+        {
+          "maximum": 3,
+          "minimum": 1,
+          "type": "integer"
+        }
+      ],
+      "description": "type determines if address is required",
+      "title": "Shipping Type"
+    }
+  },
+  "required": [
+    "type"
+  ],
+  "title": "Shipping Info",
+  "type": "object"
+}

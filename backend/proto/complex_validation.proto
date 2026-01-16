@@ -1,0 +1,382 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "validation-service/backend/proto";
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+// ShippingType represents different shipping methods
+enum ShippingType {
+  SHIPPING_TYPE_UNSPECIFIED = 0;
+  SHIPPING_TYPE_DIGITAL = 1;
+  SHIPPING_TYPE_PHYSICAL = 2;
+  SHIPPING_TYPE_EXPRESS = 3;
+}
+
+// CustomerInfo represents customer information with nested validations
+message CustomerInfo {
+  // email must be a valid email
+  string email = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.email = true
+  ];
+
+  // phone must match phone pattern
+  string phone = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      pattern: "^\\+?[1-9]\\d{1,14}$"
+    }
+  ];
+
+  // address is optional but may be required by parent message
+  string address = 3 [
+    (buf.validate.field).string = {
+      min_len: 10,
+      max_len: 500
+    }
+  ];
+
+  // name is required
+  string name = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 2,
+      max_len: 100
+    }
+  ];
+}
+
+// OrderItem represents an item in an order with conditional validation
+message OrderItem {
+  // productId is required
+  string product_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1,
+      max_len: 50
+    }
+  ];
+
+  // quantity must be at least 1
+  int32 quantity = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32 = {
+      gte: 1,
+      lte: 1000
+    }
+  ];
+
+  // price must be positive
+  double price = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double = {
+      gt: 0.0
+    }
+  ];
+
+  // discount is optional but required when quantity > 10
+  optional double discount = 4 [
+    (buf.validate.field).double = {
+      gte: 0.0,
+      lte: 100.0  // Percentage discount
+    }
+  ];
+
+  // CEL constraint: discount required when quantity > 10
+  option (buf.validate.message).cel = {
+    id: "discount_required_for_bulk",
+    message: "discount is required when quantity is greater than 10",
+    expression: "this.quantity <= 10 || has(this.discount)"
+  };
+}
+
+// ShippingInfo represents shipping information with conditional address requirement
+message ShippingInfo {
+  // type determines if address is required
+  ShippingType type = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // address is required when type is PHYSICAL or EXPRESS
+  optional string address = 2 [
+    (buf.validate.field).string = {
+      min_len: 10,
+      max_len: 500
+    }
+  ];
+
+  // trackingNumber is optional
+  string tracking_number = 3 [
+    (buf.validate.field).string = {
+      max_len: 100
+    }
+  ];
+
+  // CEL constraint: address required for physical shipping
+  option (buf.validate.message).cel = {
+    id: "address_required_for_physical",
+    message: "address is required when shipping type is PHYSICAL or EXPRESS",
+    expression: "(this.type != proto.ShippingType.SHIPPING_TYPE_PHYSICAL && this.type != proto.ShippingType.SHIPPING_TYPE_EXPRESS) || has(this.address)"
+  };
+}
+
+// ComplexOrder demonstrates complex nested validation with CEL
+message ComplexOrder {
+  // customer information
+  CustomerInfo customer = 1 [
+    (buf.validate.field).required = true
+  ];
+
+  // order items (at least 1 required)
+  repeated OrderItem items = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).repeated = {
+      min_items: 1,
+      max_items: 100
+    }
+  ];
+
+  // shipping information
+  ShippingInfo shipping = 3 [
+    (buf.validate.field).required = true
+  ];
+
+  // total must match sum of items
+  double total = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double = {
+      gt: 0.0
+    }
+  ];
+
+  // CEL constraint: customer.address required when shipping.type is PHYSICAL or EXPRESS
+  option (buf.validate.message).cel = {
+    id: "customer_address_required",
+    message: "customer.address is required when shipping.type is PHYSICAL or EXPRESS",
+    expression: "(this.shipping.type != proto.ShippingType.SHIPPING_TYPE_PHYSICAL && this.shipping.type != proto.ShippingType.SHIPPING_TYPE_EXPRESS) || has(this.customer.address)"
+  };
+
+  // CEL constraint: total must equal sum of (item.price * item.quantity) - item.discount
+  option (buf.validate.message).cel = {
+    id: "total_matches_items",
+    message: "total must equal the sum of (item.price * item.quantity) minus item.discount for all items",
+    expression: "this.total == this.items.map(item, item.price * item.quantity - (has(item.discount) ? item.discount : 0.0)).sum()"
+  };
+}
+
+// Relationship represents emergency contact relationship types
+enum Relationship {
+  RELATIONSHIP_UNSPECIFIED = 0;
+  RELATIONSHIP_SPOUSE = 1;
+  RELATIONSHIP_PARENT = 2;
+  RELATIONSHIP_SIBLING = 3;
+  RELATIONSHIP_FRIEND = 4;
+  RELATIONSHIP_OTHER = 5;
+}
+
+// PersonalInfo represents personal information with age validation
+message PersonalInfo {
+  // name is required
+  string name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 2,
+      max_len: 100
+    }
+  ];
+
+  // email must be valid
+  string email = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.email = true
+  ];
+
+  // phone must match pattern
+  string phone = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      pattern: "^\\+?[1-9]\\d{1,14}$"
+    }
+  ];
+
+  // dateOfBirth is required
+  google.protobuf.Timestamp date_of_birth = 4 [
+    (buf.validate.field).required = true
+  ];
+}
+
+// WorkInfo represents work-related information
+message WorkInfo {
+  // department is required
+  string department = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 2,
+      max_len: 50
+    }
+  ];
+
+  // salary must be non-negative
+  double salary = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double = {
+      gte: 0.0
+    }
+  ];
+
+  // startDate must be after dateOfBirth (validated in parent)
+  google.protobuf.Timestamp start_date = 3 [
+    (buf.validate.field).required = true
+  ];
+}
+
+// EmergencyContact represents emergency contact information
+message EmergencyContact {
+  // name is required
+  string name = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 2,
+      max_len: 100
+    }
+  ];
+
+  // relationship is required
+  Relationship relationship = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // phone is required when relationship is SPOUSE
+  string phone = 3 [
+    (buf.validate.field).string = {
+      pattern: "^\\+?[1-9]\\d{1,14}$"
+    }
+  ];
+
+  // CEL constraint: phone required for SPOUSE relationship
+  option (buf.validate.message).cel = {
+    id: "phone_required_for_spouse",
+    message: "phone is required when relationship is SPOUSE",
+    expression: "this.relationship != proto.Relationship.RELATIONSHIP_SPOUSE || has(this.phone)"
+  };
+}
+
+// EmployeeProfile demonstrates deep nesting with multiple CEL constraints
+message EmployeeProfile {
+  // personalInfo is required
+  PersonalInfo personal_info = 1 [
+    (buf.validate.field).required = true
+  ];
+
+  // workInfo is required
+  WorkInfo work_info = 2 [
+    (buf.validate.field).required = true
+  ];
+
+  // emergencyContact is required
+  EmergencyContact emergency_contact = 3 [
+    (buf.validate.field).required = true
+  ];
+
+  // CEL constraint: age must be at least 18 (calculated from dateOfBirth)
+  option (buf.validate.message).cel = {
+    id: "minimum_age_18",
+    message: "employee must be at least 18 years old",
+    expression: "now() - this.personal_info.date_of_birth >= duration('18y')"
+  };
+
+  // CEL constraint: startDate must be after dateOfBirth
+  option (buf.validate.message).cel = {
+    id: "start_date_after_birth",
+    message: "work startDate must be after personal dateOfBirth",
+    expression: "this.work_info.start_date > this.personal_info.date_of_birth"
+  };
+}
+
+// InventoryItem represents an inventory item with validation
+message InventoryItem {
+  // itemId is required
+  string item_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      pattern: "^[A-Z0-9-]+$",  // Uppercase letters, numbers, and hyphens
+      min_len: 3,
+      max_len: 20
+    }
+  ];
+
+  // name is required
+  string name = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 1,
+      max_len: 200
+    }
+  ];
+
+  // quantity must be non-negative
+  int32 quantity = 3 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32 = {
+      gte: 0
+    }
+  ];
+
+  // price must be positive
+  double price = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).double = {
+      gt: 0.0
+    }
+  ];
+}
+
+// Warehouse represents a warehouse with inventory
+message Warehouse {
+  // warehouseId is required
+  string warehouse_id = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      pattern: "^WH-[A-Z0-9]+$",  // Format: WH-XXXXX
+      min_len: 4,
+      max_len: 20
+    }
+  ];
+
+  // location is required
+  string location = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string = {
+      min_len: 3,
+      max_len: 100
+    }
+  ];
+
+  // items is a repeated field
+  repeated InventoryItem items = 3 [
+    (buf.validate.field).repeated = {
+      min_items: 0,
+      max_items: 10000
+    }
+  ];
+
+  // capacity is the maximum number of items
+  int32 capacity = 4 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).int32 = {
+      gt: 0
+    }
+  ];
+
+  // CEL constraint: total quantity of items must not exceed capacity
+  option (buf.validate.message).cel = {
+    id: "capacity_check",
+    message: "total quantity of all items must not exceed warehouse capacity",
+    expression: "this.items.map(item, item.quantity).sum() <= this.capacity"
+  };
+}

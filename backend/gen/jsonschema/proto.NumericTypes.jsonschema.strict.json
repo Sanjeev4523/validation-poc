@@ -1,0 +1,52 @@
+{
+  "$id": "proto.NumericTypes.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "NumericTypes demonstrates various numeric validations",
+  "properties": {
+    "doubleValue": {
+      "description": "double_value must be between -100.0 and 100.0",
+      "maximum": 100,
+      "minimum": -100,
+      "type": "number"
+    },
+    "floatValue": {
+      "description": "float_value must be between 0.0 and 1.0",
+      "maximum": 1,
+      "minimum": 0,
+      "type": "number"
+    },
+    "int32Value": {
+      "description": "int32_value must be between -1000 and 1000",
+      "maximum": 1000,
+      "minimum": -1000,
+      "type": "integer"
+    },
+    "int64Value": {
+      "description": "int64_value must be positive",
+      "exclusiveMinimum": 0,
+      "type": "integer"
+    },
+    "uint32Value": {
+      "description": "uint32_value must be at most 10000",
+      "maximum": 10000,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "uint64Value": {
+      "description": "uint64_value must be at least 1",
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "int32Value",
+    "int64Value",
+    "floatValue",
+    "doubleValue",
+    "uint32Value",
+    "uint64Value"
+  ],
+  "title": "Numeric Types",
+  "type": "object"
+}

@@ -1,0 +1,39 @@
+{
+  "$defs": {
+    "proto.AgeRestrictedProduct.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "AgeRestrictedProduct demonstrates cross-field validation using CEL",
+      "properties": {
+        "min_age": {
+          "description": "minAge is the minimum age required to purchase",
+          "maximum": 100,
+          "minimum": 18,
+          "type": "integer"
+        },
+        "product_name": {
+          "description": "productName is required",
+          "maxLength": 100,
+          "minLength": 1,
+          "type": "string"
+        },
+        "user_age": {
+          "description": "userAge is the age of the user attempting to purchase",
+          "maximum": 150,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "product_name",
+        "min_age",
+        "user_age"
+      ],
+      "title": "Age Restricted Product",
+      "type": "object"
+    }
+  },
+  "$id": "proto.AgeRestrictedProduct.schema.strict.bundle.json",
+  "$ref": "#/$defs/proto.AgeRestrictedProduct.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,100 @@
+{
+  "$defs": {
+    "proto.DiscountCoupon.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "DiscountCoupon demonstrates conditional validation based on numeric comparison",
+      "patternProperties": {
+        "^(coupon_code)$": {
+          "description": "couponCode is required",
+          "maxLength": 20,
+          "minLength": 3,
+          "pattern": "^[A-Z0-9]+$",
+          "type": "string"
+        },
+        "^(discount_percent)$": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "pattern": "^-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?$",
+              "type": "string"
+            }
+          ],
+          "description": "discountPercent must be between 0 and 100"
+        },
+        "^(min_purchase)$": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "minPurchase is the minimum purchase amount required"
+        }
+      },
+      "properties": {
+        "couponCode": {
+          "description": "couponCode is required",
+          "maxLength": 20,
+          "minLength": 3,
+          "pattern": "^[A-Z0-9]+$",
+          "type": "string"
+        },
+        "discountPercent": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "pattern": "^-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?$",
+              "type": "string"
+            }
+          ],
+          "description": "discountPercent must be between 0 and 100"
+        },
+        "minPurchase": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "minPurchase is the minimum purchase amount required"
+        }
+      },
+      "required": [
+        "couponCode",
+        "minPurchase"
+      ],
+      "title": "Discount Coupon",
+      "type": "object"
+    }
+  },
+  "$id": "proto.DiscountCoupon.jsonschema.bundle.json",
+  "$ref": "#/$defs/proto.DiscountCoupon.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,133 @@
+{
+  "$defs": {
+    "proto.InventoryItem.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "InventoryItem represents an inventory item with validation",
+      "patternProperties": {
+        "^(itemId)$": {
+          "description": "itemId is required",
+          "maxLength": 20,
+          "minLength": 3,
+          "pattern": "^[A-Z0-9-]+$",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "item_id": {
+          "description": "itemId is required",
+          "maxLength": 20,
+          "minLength": 3,
+          "pattern": "^[A-Z0-9-]+$",
+          "type": "string"
+        },
+        "name": {
+          "description": "name is required",
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        "price": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "description": "price must be positive"
+        },
+        "quantity": {
+          "anyOf": [
+            {
+              "exclusiveMaximum": 2147483648,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "description": "quantity must be non-negative"
+        }
+      },
+      "required": [
+        "item_id",
+        "name",
+        "quantity",
+        "price"
+      ],
+      "title": "Inventory Item",
+      "type": "object"
+    },
+    "proto.Warehouse.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "Warehouse represents a warehouse with inventory",
+      "patternProperties": {
+        "^(warehouseId)$": {
+          "description": "warehouseId is required",
+          "maxLength": 20,
+          "minLength": 4,
+          "pattern": "^WH-[A-Z0-9]+$",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "capacity": {
+          "anyOf": [
+            {
+              "exclusiveMaximum": 2147483648,
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "description": "capacity is the maximum number of items"
+        },
+        "items": {
+          "description": "items is a repeated field",
+          "items": {
+            "$ref": "#/$defs/proto.InventoryItem.schema.json"
+          },
+          "type": "array"
+        },
+        "location": {
+          "description": "location is required",
+          "maxLength": 100,
+          "minLength": 3,
+          "type": "string"
+        },
+        "warehouse_id": {
+          "description": "warehouseId is required",
+          "maxLength": 20,
+          "minLength": 4,
+          "pattern": "^WH-[A-Z0-9]+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "warehouse_id",
+        "location",
+        "capacity"
+      ],
+      "title": "Warehouse",
+      "type": "object"
+    }
+  },
+  "$id": "proto.Warehouse.schema.bundle.json",
+  "$ref": "#/$defs/proto.Warehouse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
