@@ -37,6 +37,26 @@ func (s *greetingServer) SayHello(ctx context.Context, req *proto.HelloRequest) 
 	}, nil
 }
 
+// corsMiddleware adds CORS headers to all responses
+func corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Set CORS headers to allow all origins
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+		w.Header().Set("Access-Control-Max-Age", "3600")
+
+		// Handle preflight OPTIONS requests
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		// Call the next handler
+		next(w, r)
+	}
+}
+
 func helloHandler(w http.ResponseWriter, r *http.Request) {
 	// Set content type to JSON
 	w.Header().Set("Content-Type", "application/json")
@@ -109,23 +129,23 @@ func main() {
 		}
 	}()
 
-	// Register the hello world route
+	// Register the hello world route with CORS
 	logger.Debug("Registering HTTP routes...")
-	http.HandleFunc("/hello", helloHandler)
+	http.HandleFunc("/hello", corsMiddleware(helloHandler))
 	logger.Debug("Registered route: GET /hello")
 
-	// Register schema API route
-	http.HandleFunc("/api/v1/schema/", schemaHandler.GetSchema)
+	// Register schema API route with CORS
+	http.HandleFunc("/api/v1/schema/", corsMiddleware(schemaHandler.GetSchema))
 	logger.Debug("Registered route: GET /api/v1/schema/{messageName}")
 
-	// Also register root route for convenience
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// Also register root route for convenience with CORS
+	http.HandleFunc("/", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
 			return
 		}
 		helloHandler(w, r)
-	})
+	}))
 	logger.Debug("Registered route: GET /")
 
 	// Start HTTP server on port 8080
