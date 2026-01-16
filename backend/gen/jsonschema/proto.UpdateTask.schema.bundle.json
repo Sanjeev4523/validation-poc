@@ -1,0 +1,44 @@
+{
+  "$defs": {
+    "proto.UpdateTask.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "description": "UpdateTask represents a request to update a task's status",
+      "properties": {
+        "comment": {
+          "description": "comment is required when status is BLOCKED, otherwise optional (max 1000 characters)",
+          "maxLength": 1000,
+          "type": "string"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "enum": [
+                "TASK_STATUS_OPEN",
+                "TASK_STATUS_IN_PROGRESS",
+                "TASK_STATUS_BLOCKED",
+                "TASK_STATUS_COMPLETED"
+              ],
+              "type": "string"
+            },
+            {
+              "maximum": 4,
+              "minimum": 1,
+              "type": "integer"
+            }
+          ],
+          "description": "status is the new status for the task (required)",
+          "title": "Task Status"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "Update Task",
+      "type": "object"
+    }
+  },
+  "$id": "proto.UpdateTask.schema.bundle.json",
+  "$ref": "#/$defs/proto.UpdateTask.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

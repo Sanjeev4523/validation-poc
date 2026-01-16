@@ -152,6 +152,61 @@ func (x *Task) GetStatus() TaskStatus {
 	return TaskStatus_TASK_STATUS_UNSPECIFIED
 }
 
+// UpdateTask represents a request to update a task's status
+type UpdateTask struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// status is the new status for the task (required)
+	Status TaskStatus `protobuf:"varint,1,opt,name=status,proto3,enum=proto.TaskStatus" json:"status,omitempty"`
+	// comment is required when status is BLOCKED, otherwise optional (max 1000 characters)
+	Comment       *string `protobuf:"bytes,2,opt,name=comment,proto3,oneof" json:"comment,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateTask) Reset() {
+	*x = UpdateTask{}
+	mi := &file_proto_task_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateTask) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateTask) ProtoMessage() {}
+
+func (x *UpdateTask) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_task_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateTask.ProtoReflect.Descriptor instead.
+func (*UpdateTask) Descriptor() ([]byte, []int) {
+	return file_proto_task_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *UpdateTask) GetStatus() TaskStatus {
+	if x != nil {
+		return x.Status
+	}
+	return TaskStatus_TASK_STATUS_UNSPECIFIED
+}
+
+func (x *UpdateTask) GetComment() string {
+	if x != nil && x.Comment != nil {
+		return *x.Comment
+	}
+	return ""
+}
+
 var File_proto_task_proto protoreflect.FileDescriptor
 
 const file_proto_task_proto_rawDesc = "" +
@@ -162,7 +217,15 @@ const file_proto_task_proto_rawDesc = "" +
 	"\vdescription\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xe8\aR\vdescription\x12@\n" +
 	"\ttimestamp\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xbaH\x03\xc8\x01\x01R\ttimestamp\x128\n" +
 	"\x06status\x18\x04 \x01(\x0e2\x11.proto.TaskStatusB\r\xbaH\n" +
-	"\xc8\x01\x01\x82\x01\x04\x10\x01 \x00R\x06status*\x90\x01\n" +
+	"\xc8\x01\x01\x82\x01\x04\x10\x01 \x00R\x06status\"\x9e\x02\n" +
+	"\n" +
+	"UpdateTask\x128\n" +
+	"\x06status\x18\x01 \x01(\x0e2\x11.proto.TaskStatusB\r\xbaH\n" +
+	"\xc8\x01\x01\x82\x01\x04\x10\x01 \x00R\x06status\x12'\n" +
+	"\acomment\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xe8\aH\x00R\acomment\x88\x01\x01:\xa0\x01\xbaH\x9c\x01\x1a\x99\x01\n" +
+	"\x1bcomment_required_if_blocked\x126comment is required when status is TASK_STATUS_BLOCKED\x1aBthis.status != TaskStatus.TASK_STATUS_BLOCKED || has(this.comment)B\n" +
+	"\n" +
+	"\b_comment*\x90\x01\n" +
 	"\n" +
 	"TaskStatus\x12\x1b\n" +
 	"\x17TASK_STATUS_UNSPECIFIED\x10\x00\x12\x14\n" +
@@ -184,20 +247,22 @@ func file_proto_task_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_task_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_task_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_proto_task_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_proto_task_proto_goTypes = []any{
 	(TaskStatus)(0),               // 0: proto.TaskStatus
 	(*Task)(nil),                  // 1: proto.Task
-	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
+	(*UpdateTask)(nil),            // 2: proto.UpdateTask
+	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
 }
 var file_proto_task_proto_depIdxs = []int32{
-	2, // 0: proto.Task.timestamp:type_name -> google.protobuf.Timestamp
+	3, // 0: proto.Task.timestamp:type_name -> google.protobuf.Timestamp
 	0, // 1: proto.Task.status:type_name -> proto.TaskStatus
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	0, // 2: proto.UpdateTask.status:type_name -> proto.TaskStatus
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_proto_task_proto_init() }
@@ -205,13 +270,14 @@ func file_proto_task_proto_init() {
 	if File_proto_task_proto != nil {
 		return
 	}
+	file_proto_task_proto_msgTypes[1].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_task_proto_rawDesc), len(file_proto_task_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   1,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

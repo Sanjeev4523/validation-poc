@@ -110,6 +110,16 @@ func main() {
 	schemaHandler := handler.NewSchemaHandler(schemaService)
 	logger.Info("Schema handler initialized successfully")
 
+	// Initialize validation service
+	logger.Debug("Initializing validation service...")
+	validationService := service.NewValidationService(validator)
+	logger.Info("Validation service initialized successfully")
+
+	// Initialize validation handler
+	logger.Debug("Initializing validation handler...")
+	validationHandler := handler.NewValidationHandler(validationService)
+	logger.Info("Validation handler initialized successfully")
+
 	// Start gRPC server in a goroutine
 	go func() {
 		logger.Debug("Starting gRPC server on port :50051...")
@@ -138,6 +148,10 @@ func main() {
 	http.HandleFunc("/api/v1/schema/", corsMiddleware(schemaHandler.GetSchema))
 	logger.Debug("Registered route: GET /api/v1/schema/{messageName}")
 
+	// Register validation API route with CORS
+	http.HandleFunc("/api/v1/validate-proto", corsMiddleware(validationHandler.ValidateProto))
+	logger.Debug("Registered route: POST /api/v1/validate-proto")
+
 	// Also register root route for convenience with CORS
 	http.HandleFunc("/", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
@@ -153,6 +167,7 @@ func main() {
 	logger.Info("HTTP server starting on port %s", port)
 	logger.Info("Hello world route available at http://localhost%s/hello", port)
 	logger.Info("Schema API route available at http://localhost%s/api/v1/schema/{messageName}", port)
+	logger.Info("Validation API route available at http://localhost%s/api/v1/validate-proto", port)
 	logger.Info("Validation service started successfully")
 
 	if err := http.ListenAndServe(port, nil); err != nil {

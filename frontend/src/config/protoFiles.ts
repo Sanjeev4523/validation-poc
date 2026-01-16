@@ -16,4 +16,9 @@ export const protoFiles: ProtoFile[] = [
     description: 'Task with name, description, timestamp, and status',
     fullyQualifiedName: 'proto.Task',
   },
+  {
+    name: 'UpdateTask',
+    description: 'Request to update a task status. Comment is required when status is BLOCKED, otherwise optional',
+    fullyQualifiedName: 'proto.UpdateTask',
+  },
 ];

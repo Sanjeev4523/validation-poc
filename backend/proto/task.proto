@@ -46,3 +46,26 @@ message Task {
     }
   ];
 }
+
+// UpdateTask represents a request to update a task's status
+message UpdateTask {
+  // status is the new status for the task (required)
+  TaskStatus status = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      defined_only: true,
+      not_in: [0]  // TASK_STATUS_UNSPECIFIED is not allowed
+    }
+  ];
+
+  // comment is required when status is BLOCKED, otherwise optional (max 1000 characters)
+  optional string comment = 2 [
+    (buf.validate.field).string.max_len = 1000
+  ];
+
+  option (buf.validate.message).cel = {
+    id: "comment_required_if_blocked",
+    message: "comment is required when status is TASK_STATUS_BLOCKED",
+    expression: "this.status != TaskStatus.TASK_STATUS_BLOCKED || has(this.comment)"
+  };
+}
