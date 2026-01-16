@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -18,12 +19,43 @@ const (
 	LocalOnly
 )
 
-// SCHEMA_SOURCE_MODE controls how schemas are retrieved
-// Change this constant to switch between modes:
-// - BSROnly: Fetch directly from BSR (skip local check)
-// - LocalOnly: Only use local files (never fetch from BSR)
-// - LocalThenBSR: Check local first, then BSR (default behavior)
-const SCHEMA_SOURCE_MODE = BSROnly
+// GetSchemaSourceMode retrieves the schema source mode from environment variable
+// Context can be "schema" or "validation" (case-insensitive)
+// - For "schema": reads from SCHEMA_SOURCE_MODE env var
+// - For "validation": reads from VALIDATION_SOURCE_MODE env var
+// Supports values: "local-then-bsr", "bsr-only", "local-only" (case-insensitive)
+// Defaults to LocalThenBSR if not set or invalid
+func GetSchemaSourceMode(context string) SchemaSourceMode {
+	context = strings.ToLower(strings.TrimSpace(context))
+
+	var envVar string
+	var defaultMode string = "local-then-bsr"
+
+	switch context {
+	case "schema":
+		envVar = "SCHEMA_SOURCE_MODE"
+	case "validation":
+		envVar = "VALIDATION_SOURCE_MODE"
+	default:
+		// Default to schema if invalid context
+		envVar = "SCHEMA_SOURCE_MODE"
+	}
+
+	modeStr := GetEnv(envVar, defaultMode)
+	modeStr = strings.ToLower(strings.TrimSpace(modeStr))
+
+	switch modeStr {
+	case "bsr-only":
+		return BSROnly
+	case "local-only":
+		return LocalOnly
+	case "local-then-bsr":
+		return LocalThenBSR
+	default:
+		// Default to LocalThenBSR for invalid values
+		return LocalThenBSR
+	}
+}
 
 // LoadEnv loads environment variables from .env file
 // If the .env file doesn't exist, it silently falls back to system environment variables

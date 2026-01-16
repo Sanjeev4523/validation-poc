@@ -228,7 +228,7 @@ func (s *SchemaService) ListProtoFiles() ([]ProtoFile, error) {
 
 		// Only include messages in the "proto" namespace
 		if !strings.HasPrefix(fullyQualifiedName, "proto.") {
-			logger.Debug("Skipping message not in proto namespace: %s", fullyQualifiedName)
+			// logger.Debug("Skipping message not in proto namespace: %s", fullyQualifiedName)
 			// Still process nested messages in case they're in proto namespace
 			nested := md.Messages()
 			for i := 0; i < nested.Len(); i++ {

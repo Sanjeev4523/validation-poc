@@ -1,15 +1,22 @@
 package service
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"regexp"
 	"strings"
+	"validation-service/backend/config"
 	"validation-service/backend/logger"
 
 	"buf.build/go/protovalidate"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
@@ -21,41 +28,236 @@ type ValidationError struct {
 
 // ValidationService handles proto validation using dynamic messages
 type ValidationService struct {
-	validator protovalidate.Validator
+	validator        protovalidate.Validator
+	schemaSourceMode config.SchemaSourceMode
+	bsrOrg           string
+	bsrModule        string
+	bsrToken         string
+	httpClient       *http.Client
 }
 
 // NewValidationService creates a new validation service instance
-func NewValidationService(validator protovalidate.Validator) *ValidationService {
-	logger.Debug("Initializing ValidationService")
+func NewValidationService(validator protovalidate.Validator, schemaSourceMode config.SchemaSourceMode, bsrOrg, bsrModule, bsrToken string) *ValidationService {
+	logger.Debug("Initializing ValidationService with mode=%d, org=%s, module=%s", schemaSourceMode, bsrOrg, bsrModule)
 	return &ValidationService{
-		validator: validator,
+		validator:        validator,
+		schemaSourceMode: schemaSourceMode,
+		bsrOrg:           bsrOrg,
+		bsrModule:        bsrModule,
+		bsrToken:         bsrToken,
+		httpClient:       &http.Client{},
 	}
+}
+
+// GetFileDescriptorSetRequest represents the request body for BSR Reflection API
+type GetFileDescriptorSetRequest struct {
+	Module  string   `json:"module"`
+	Version string   `json:"version,omitempty"`
+	Symbols []string `json:"symbols,omitempty"`
+}
+
+// GetFileDescriptorSetResponse represents the response from BSR Reflection API
+// The fileDescriptorSet field is a JSON object that needs to be unmarshaled separately
+type GetFileDescriptorSetResponse struct {
+	FileDescriptorSet json.RawMessage `json:"fileDescriptorSet"`
+	Version           string          `json:"version,omitempty"`
+}
+
+// fetchDescriptorFromBSR fetches the FileDescriptorSet from BSR using the Reflection API
+// and returns a *protoregistry.Files
+// schemaName is the fully qualified message name (e.g., "proto.Task") to include in symbols
+func (s *ValidationService) fetchDescriptorFromBSR(schemaName string) (*protoregistry.Files, error) {
+	// Build module name in format: buf.build/{org}/{module}
+	moduleName := fmt.Sprintf("buf.build/%s/%s", s.bsrOrg, s.bsrModule)
+
+	// Get version from environment variable, default to "latest"
+	version := config.GetEnv("BSR_VERSION", "main")
+
+	// Build request body with symbols (fully qualified message name)
+	requestBody := GetFileDescriptorSetRequest{
+		Module:  moduleName,
+		Version: version,
+		Symbols: []string{schemaName}, // Include the fully qualified message name
+	}
+
+	jsonBody, err := json.Marshal(requestBody)
+	if err != nil {
+		logger.Error("Failed to marshal request body: %v", err)
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	// Build BSR Reflection API URL
+	url := "https://buf.build/buf.reflect.v1beta1.FileDescriptorSetService/GetFileDescriptorSet"
+
+	// Log URL and request body in debug mode
+	logger.Debug("BSR Reflection API URL: %s", url)
+	logger.Debug("BSR Reflection API Request Body: %s", string(jsonBody))
+	logger.Debug("Fetching descriptor from BSR Reflection API: module=%s, version=%s, symbols=%v", moduleName, version, requestBody.Symbols)
+
+	// Create HTTP POST request
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		logger.Error("Failed to create HTTP request for URL %s: %v", url, err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set headers
+	req.Header.Set("Content-Type", "application/json")
+	if s.bsrToken != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.bsrToken))
+		logger.Debug("Added Bearer token to BSR request")
+	}
+
+	// Execute the request
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		logger.Error("HTTP POST request failed for URL %s: %v", url, err)
+		return nil, fmt.Errorf("HTTP request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	logger.Debug("BSR HTTP response status: %d %s", resp.StatusCode, resp.Status)
+
+	if resp.StatusCode == http.StatusNotFound {
+		logger.Debug("Descriptor not found in BSR (404)")
+		return nil, fmt.Errorf("descriptor not found in BSR")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		// Try to read error body for better error messages
+		errorBody, _ := io.ReadAll(resp.Body)
+		logger.Error("BSR returned unexpected status code %d: %s", resp.StatusCode, string(errorBody))
+		return nil, fmt.Errorf("BSR returned status code %d", resp.StatusCode)
+	}
+
+	// Read JSON response
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error("Failed to read BSR response body: %v", err)
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	logger.Debug("Successfully read BSR response body (size: %d bytes)", len(data))
+
+	// Parse JSON response
+	var apiResponse GetFileDescriptorSetResponse
+	if err := json.Unmarshal(data, &apiResponse); err != nil {
+		logger.Error("Failed to unmarshal JSON response: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal JSON response: %w", err)
+	}
+
+	if len(apiResponse.FileDescriptorSet) == 0 {
+		logger.Error("FileDescriptorSet is empty in API response")
+		return nil, fmt.Errorf("FileDescriptorSet is empty in API response")
+	}
+
+	// Unmarshal FileDescriptorSet from JSON using protojson
+	var fds descriptorpb.FileDescriptorSet
+	unmarshalOpts := protojson.UnmarshalOptions{
+		DiscardUnknown: true,
+	}
+	if err := unmarshalOpts.Unmarshal(apiResponse.FileDescriptorSet, &fds); err != nil {
+		logger.Error("Failed to unmarshal FileDescriptorSet from JSON: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal FileDescriptorSet: %w", err)
+	}
+
+	// Convert FileDescriptorSet to *protoregistry.Files
+	files, err := protodesc.NewFiles(&fds)
+	if err != nil {
+		logger.Error("Failed to create Files from FileDescriptorSet: %v", err)
+		return nil, fmt.Errorf("failed to create Files: %w", err)
+	}
+
+	logger.Debug("Successfully created Files from BSR descriptor (version: %s)", apiResponse.Version)
+	return files, nil
+}
+
+// findMessageDescriptor finds a message descriptor by fully qualified name
+// It tries the provided files first, then falls back to GlobalFiles
+func (s *ValidationService) findMessageDescriptor(schemaName string, files *protoregistry.Files) (protoreflect.MessageDescriptor, error) {
+	fullName := protoreflect.FullName(schemaName)
+
+	// Try to find in provided files first
+	if files != nil {
+		desc, err := files.FindDescriptorByName(fullName)
+		if err == nil {
+			if md, ok := desc.(protoreflect.MessageDescriptor); ok {
+				logger.Debug("Found message descriptor in provided files: %s", schemaName)
+				return md, nil
+			}
+		}
+	}
+
+	// Fallback to GlobalFiles
+	desc, err := protoregistry.GlobalFiles.FindDescriptorByName(fullName)
+	if err != nil {
+		return nil, err
+	}
+
+	md, ok := desc.(protoreflect.MessageDescriptor)
+	if !ok {
+		return nil, fmt.Errorf("schema name %s does not refer to a message", schemaName)
+	}
+
+	logger.Debug("Found message descriptor in GlobalFiles: %s", schemaName)
+	return md, nil
 }
 
 // ValidateProto validates a JSON payload against a protobuf message definition
 // Returns success status, array of validation errors, and any processing error
 func (s *ValidationService) ValidateProto(schemaName string, jsonPayload []byte) (bool, []ValidationError, error) {
-	logger.Debug("ValidateProto called for schemaName=%s", schemaName)
+	logger.Debug("ValidateProto called for schemaName=%s, mode=%d", schemaName, s.schemaSourceMode)
 
-	// Step 1: Find message descriptor in global registry
-	desc, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(schemaName))
-	if err != nil {
-		logger.Debug("Failed to find descriptor for schemaName=%s: %v", schemaName, err)
-		return false, nil, fmt.Errorf("unknown schema name: %s", schemaName)
+	var md protoreflect.MessageDescriptor
+	var err error
+
+	// Step 1: Find message descriptor based on mode
+	if s.schemaSourceMode == config.BSROnly {
+		// BSROnly: Always fetch from BSR
+		logger.Debug("BSROnly mode: fetching descriptor from BSR for %s", schemaName)
+		files, err := s.fetchDescriptorFromBSR(schemaName)
+		if err != nil {
+			logger.Debug("Failed to fetch descriptor from BSR for schemaName=%s: %v", schemaName, err)
+			return false, nil, fmt.Errorf("failed to fetch descriptor from BSR: %w", err)
+		}
+		md, err = s.findMessageDescriptor(schemaName, files)
+		if err != nil {
+			logger.Debug("Failed to find descriptor in BSR files for schemaName=%s: %v", schemaName, err)
+			return false, nil, fmt.Errorf("unknown schema name: %s", schemaName)
+		}
+	} else if s.schemaSourceMode == config.LocalOnly {
+		// LocalOnly: Only use GlobalFiles
+		logger.Debug("LocalOnly mode: checking GlobalFiles for %s", schemaName)
+		md, err = s.findMessageDescriptor(schemaName, nil)
+		if err != nil {
+			logger.Debug("Failed to find descriptor in GlobalFiles for schemaName=%s: %v", schemaName, err)
+			return false, nil, fmt.Errorf("unknown schema name: %s", schemaName)
+		}
+	} else {
+		// LocalThenBSR: Try local first, then fallback to BSR
+		logger.Debug("LocalThenBSR mode: checking GlobalFiles first for %s", schemaName)
+		md, err = s.findMessageDescriptor(schemaName, nil)
+		if err != nil {
+			logger.Debug("Not found in GlobalFiles, fetching from BSR for schemaName=%s", schemaName)
+			// Fallback to BSR
+			files, bsrErr := s.fetchDescriptorFromBSR(schemaName)
+			if bsrErr != nil {
+				logger.Debug("Failed to fetch descriptor from BSR for schemaName=%s: %v", schemaName, bsrErr)
+				return false, nil, fmt.Errorf("unknown schema name: %s (local and BSR lookup failed)", schemaName)
+			}
+			md, err = s.findMessageDescriptor(schemaName, files)
+			if err != nil {
+				logger.Debug("Failed to find descriptor in BSR files for schemaName=%s: %v", schemaName, err)
+				return false, nil, fmt.Errorf("unknown schema name: %s", schemaName)
+			}
+		}
 	}
 
-	// Step 2: Cast to MessageDescriptor
-	md, ok := desc.(protoreflect.MessageDescriptor)
-	if !ok {
-		logger.Debug("Descriptor is not a message descriptor for schemaName=%s", schemaName)
-		return false, nil, fmt.Errorf("schema name %s does not refer to a message", schemaName)
-	}
-
-	// Step 3: Create dynamic message
+	// Step 2: Create dynamic message
 	msg := dynamicpb.NewMessage(md)
 	logger.Debug("Created dynamic message for schemaName=%s", schemaName)
 
-	// Step 4: Unmarshal JSON to dynamic message
+	// Step 3: Unmarshal JSON to dynamic message
 	unmarshalOpts := protojson.UnmarshalOptions{
 		DiscardUnknown: true, // Ignore unknown fields
 	}
@@ -65,11 +267,11 @@ func (s *ValidationService) ValidateProto(schemaName string, jsonPayload []byte)
 	}
 	logger.Debug("Successfully unmarshaled JSON for schemaName=%s", schemaName)
 
-	// Step 5: Validate using protovalidate
+	// Step 4: Validate using protovalidate
 	if err := s.validator.Validate(msg); err != nil {
 		logger.Debug("Validation failed for schemaName=%s: %v", schemaName, err)
 
-		// Step 6: Collect validation errors
+		// Step 5: Collect validation errors
 		var errors []ValidationError
 		if validationErr, ok := err.(*protovalidate.ValidationError); ok {
 			// protovalidate.ValidationError contains detailed error information

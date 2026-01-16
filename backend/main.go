@@ -107,20 +107,36 @@ func main() {
 	bsrOrg, bsrModule := service.GetBSRConfig(basePath)
 	logger.Info("BSR configuration: org=%s, module=%s", bsrOrg, bsrModule)
 
+	// Get schema source mode from environment variable for schema service
+	schemaSourceMode := config.GetSchemaSourceMode("schema")
+	logger.Info("Schema source mode: %d", schemaSourceMode)
+
 	// Initialize schema service
 	logger.Debug("Initializing schema service...")
-	schemaService := service.NewSchemaService(bsrOrg, bsrModule, basePath, config.SCHEMA_SOURCE_MODE)
-	logger.Info("Schema service initialized successfully with mode=%d", config.SCHEMA_SOURCE_MODE)
+	schemaService := service.NewSchemaService(bsrOrg, bsrModule, basePath, schemaSourceMode)
+	logger.Info("Schema service initialized successfully with mode=%d", schemaSourceMode)
 
 	// Initialize schema handler
 	logger.Debug("Initializing schema handler...")
 	schemaHandler := handler.NewSchemaHandler(schemaService)
 	logger.Info("Schema handler initialized successfully")
 
+	// Get BSR token for validation service
+	bsrToken := config.GetEnv("BUF_TOKEN", "")
+	if bsrToken == "" {
+		logger.Warn("BUF_TOKEN is not set. BSR requests may fail for private repositories.")
+	} else {
+		logger.Debug("BUF_TOKEN is set (length: %d)", len(bsrToken))
+	}
+
+	// Get validation source mode from environment variable for validation service
+	validationSourceMode := config.GetSchemaSourceMode("validation")
+	logger.Info("Validation source mode: %d", validationSourceMode)
+
 	// Initialize validation service
 	logger.Debug("Initializing validation service...")
-	validationService := service.NewValidationService(validator)
-	logger.Info("Validation service initialized successfully")
+	validationService := service.NewValidationService(validator, validationSourceMode, bsrOrg, bsrModule, bsrToken)
+	logger.Info("Validation service initialized successfully with mode=%d", validationSourceMode)
 
 	// Initialize validation handler
 	logger.Debug("Initializing validation handler...")
