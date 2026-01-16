@@ -94,6 +94,40 @@ func (h *SchemaHandler) GetSchema(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Successfully returned schema for messageName=%s (size: %d bytes, written: %d bytes)", messageName, len(schemaData), bytesWritten)
 }
 
+// ListProtoFiles handles GET /api/v1/proto-files
+func (h *SchemaHandler) ListProtoFiles(w http.ResponseWriter, r *http.Request) {
+	logger.Debug("Received request: method=%s, path=%s, remote=%s", r.Method, r.URL.Path, r.RemoteAddr)
+
+	// Only allow GET method
+	if r.Method != http.MethodGet {
+		logger.Debug("Method not allowed: %s (expected GET)", r.Method)
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	logger.Info("Processing list proto files request")
+
+	// Get proto files list from service
+	protoFiles, err := h.schemaService.ListProtoFiles()
+	if err != nil {
+		logger.Error("Failed to list proto files: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Set response headers
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	// Encode and send JSON response
+	if err := json.NewEncoder(w).Encode(protoFiles); err != nil {
+		logger.Error("Failed to encode proto files response: %v", err)
+		return
+	}
+
+	logger.Info("Successfully returned %d proto file(s)", len(protoFiles))
+}
+
 // handleError handles errors and returns appropriate HTTP status codes
 func (h *SchemaHandler) handleError(w http.ResponseWriter, err error) {
 	errorMsg := err.Error()

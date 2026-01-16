@@ -148,6 +148,10 @@ func main() {
 	http.HandleFunc("/api/v1/schema/", corsMiddleware(schemaHandler.GetSchema))
 	logger.Debug("Registered route: GET /api/v1/schema/{messageName}")
 
+	// Register proto files list API route with CORS
+	http.HandleFunc("/api/v1/proto-files", corsMiddleware(schemaHandler.ListProtoFiles))
+	logger.Debug("Registered route: GET /api/v1/proto-files")
+
 	// Register validation API route with CORS
 	http.HandleFunc("/api/v1/validate-proto", corsMiddleware(validationHandler.ValidateProto))
 	logger.Debug("Registered route: POST /api/v1/validate-proto")
@@ -167,6 +171,7 @@ func main() {
 	logger.Info("HTTP server starting on port %s", port)
 	logger.Info("Hello world route available at http://localhost%s/hello", port)
 	logger.Info("Schema API route available at http://localhost%s/api/v1/schema/{messageName}", port)
+	logger.Info("Proto files API route available at http://localhost%s/api/v1/proto-files", port)
 	logger.Info("Validation API route available at http://localhost%s/api/v1/validate-proto", port)
 	logger.Info("Validation service started successfully")
 

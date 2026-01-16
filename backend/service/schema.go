@@ -9,6 +9,9 @@ import (
 	"regexp"
 	"strings"
 	"validation-service/backend/logger"
+
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
 // SchemaService handles schema retrieval from local filesystem or BSR
@@ -150,4 +153,120 @@ func (s *SchemaService) buildBSRURL(messageName string) string {
 	)
 	logger.Debug("Built BSR URL for messageName=%s: %s", messageName, url)
 	return url
+}
+
+// ProtoFile represents a proto message file with metadata
+type ProtoFile struct {
+	Name               string `json:"name"`
+	Description        string `json:"description"`
+	FullyQualifiedName string `json:"fullyQualifiedName"`
+}
+
+// ListProtoFiles enumerates all available proto message types from the protobuf registry
+func (s *SchemaService) ListProtoFiles() ([]ProtoFile, error) {
+	logger.Debug("ListProtoFiles called")
+
+	var protoFiles []ProtoFile
+	seenMessages := make(map[string]bool) // Track seen messages to avoid duplicates
+
+	// Recursively walk nested message descriptors
+	var walkMessages func(md protoreflect.MessageDescriptor)
+	walkMessages = func(md protoreflect.MessageDescriptor) {
+		fullyQualifiedName := string(md.FullName())
+		
+		// Only include messages in the "proto" namespace
+		if !strings.HasPrefix(fullyQualifiedName, "proto.") {
+			logger.Debug("Skipping message not in proto namespace: %s", fullyQualifiedName)
+			// Still process nested messages in case they're in proto namespace
+			nested := md.Messages()
+			for i := 0; i < nested.Len(); i++ {
+				walkMessages(nested.Get(i))
+			}
+			return
+		}
+		
+		// Skip if we've already seen this message
+		if seenMessages[fullyQualifiedName] {
+			return
+		}
+		seenMessages[fullyQualifiedName] = true
+		
+		// Get the message name (last part of the fully qualified name)
+		name := string(md.Name())
+		
+		// Extract description - try to get from source locations if available
+		description := ""
+		
+		// Try to get description from the file descriptor's source locations
+		// Note: Source code info may not always be available in compiled descriptors
+		if parent := md.Parent(); parent != nil {
+			if fd, ok := parent.(protoreflect.FileDescriptor); ok {
+				loc := fd.SourceLocations().ByDescriptor(md)
+				leadingComments := loc.LeadingComments
+				if leadingComments != "" {
+					// Clean up the comment - remove extra whitespace and newlines
+					description = strings.TrimSpace(leadingComments)
+					// Remove leading comment markers if present
+					lines := strings.Split(description, "\n")
+					var cleanedLines []string
+					for _, line := range lines {
+						line = strings.TrimSpace(line)
+						line = strings.TrimPrefix(line, "//")
+						line = strings.TrimPrefix(line, "/*")
+						line = strings.TrimSuffix(line, "*/")
+						line = strings.TrimSpace(line)
+						if line != "" {
+							cleanedLines = append(cleanedLines, line)
+						}
+					}
+					description = strings.Join(cleanedLines, " ")
+				}
+			}
+		}
+		
+		// If no description found, use a default based on the message name
+		if description == "" {
+			description = fmt.Sprintf("%s message", s.formatMessageName(name))
+		}
+
+		protoFiles = append(protoFiles, ProtoFile{
+			Name:               s.formatMessageName(name),
+			Description:        description,
+			FullyQualifiedName: fullyQualifiedName,
+		})
+
+		logger.Debug("Found proto message: %s (%s)", fullyQualifiedName, name)
+		
+		// Recursively process nested messages
+		nested := md.Messages()
+		for i := 0; i < nested.Len(); i++ {
+			walkMessages(nested.Get(i))
+		}
+	}
+
+	// Iterate through all file descriptors in the global registry
+	protoregistry.GlobalFiles.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+		// For each file, get all top-level messages
+		msgs := fd.Messages()
+		for i := 0; i < msgs.Len(); i++ {
+			walkMessages(msgs.Get(i))
+		}
+		return true // Continue iteration
+	})
+
+	logger.Info("ListProtoFiles found %d proto message(s)", len(protoFiles))
+	return protoFiles, nil
+}
+
+// formatMessageName converts CamelCase to a more readable format
+func (s *SchemaService) formatMessageName(name string) string {
+	// Simple conversion: insert spaces before capital letters (except the first one)
+	var result strings.Builder
+	for i, r := range name {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			result.WriteRune(' ')
+		}
+		result.WriteRune(r)
+	}
+	return result.String()
 }
