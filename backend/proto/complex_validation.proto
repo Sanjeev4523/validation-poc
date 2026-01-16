@@ -160,12 +160,8 @@ message ComplexOrder {
     expression: "(this.shipping.type != proto.ShippingType.SHIPPING_TYPE_PHYSICAL && this.shipping.type != proto.ShippingType.SHIPPING_TYPE_EXPRESS) || has(this.customer.address)"
   };
 
-  // CEL constraint: total must equal sum of (item.price * item.quantity) - item.discount
-  option (buf.validate.message).cel = {
-    id: "total_matches_items",
-    message: "total must equal the sum of (item.price * item.quantity) minus item.discount for all items",
-    expression: "this.total == this.items.map(item, item.price * item.quantity - (has(item.discount) ? item.discount : 0.0)).sum()"
-  };
+  // Note: CEL constraint for total matching sum of items removed because .sum() is not available
+  // in the protovalidate CEL environment. This validation would need to be done at the application level.
 }
 
 // Relationship represents emergency contact relationship types
@@ -373,10 +369,6 @@ message Warehouse {
     }
   ];
 
-  // CEL constraint: total quantity of items must not exceed capacity
-  option (buf.validate.message).cel = {
-    id: "capacity_check",
-    message: "total quantity of all items must not exceed warehouse capacity",
-    expression: "this.items.map(item, item.quantity).sum() <= this.capacity"
-  };
+  // Note: CEL constraint for capacity check removed because .sum() is not available
+  // in the protovalidate CEL environment. This validation would need to be done at the application level.
 }

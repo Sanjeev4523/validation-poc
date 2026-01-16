@@ -859,15 +859,14 @@ const file_proto_complex_validation_proto_rawDesc = "" +
 	"\x0ftracking_number\x18\x03 \x01(\tB\a\xbaH\x04r\x02\x18dR\x0etrackingNumber:\xee\x01\xbaH\xea\x01\x1a\xe7\x01\n" +
 	"\x1daddress_required_for_physical\x12=address is required when shipping type is PHYSICAL or EXPRESS\x1a\x86\x01(this.type != proto.ShippingType.SHIPPING_TYPE_PHYSICAL && this.type != proto.ShippingType.SHIPPING_TYPE_EXPRESS) || has(this.address)B\n" +
 	"\n" +
-	"\b_address\"\xd8\x05\n" +
+	"\b_address\"\xf1\x03\n" +
 	"\fComplexOrder\x127\n" +
 	"\bcustomer\x18\x01 \x01(\v2\x13.proto.CustomerInfoB\x06\xbaH\x03\xc8\x01\x01R\bcustomer\x125\n" +
 	"\x05items\x18\x02 \x03(\v2\x10.proto.OrderItemB\r\xbaH\n" +
 	"\xc8\x01\x01\x92\x01\x04\b\x01\x10dR\x05items\x127\n" +
 	"\bshipping\x18\x03 \x01(\v2\x13.proto.ShippingInfoB\x06\xbaH\x03\xc8\x01\x01R\bshipping\x12'\n" +
-	"\x05total\x18\x04 \x01(\x01B\x11\xbaH\x0e\xc8\x01\x01\x12\t!\x00\x00\x00\x00\x00\x00\x00\x00R\x05total:\xf5\x03\xbaH\xf1\x03\x1a\x87\x02\n" +
-	"\x19customer_address_required\x12Fcustomer.address is required when shipping.type is PHYSICAL or EXPRESS\x1a\xa1\x01(this.shipping.type != proto.ShippingType.SHIPPING_TYPE_PHYSICAL && this.shipping.type != proto.ShippingType.SHIPPING_TYPE_EXPRESS) || has(this.customer.address)\x1a\xe4\x01\n" +
-	"\x13total_matches_items\x12Ztotal must equal the sum of (item.price * item.quantity) minus item.discount for all items\x1aqthis.total == this.items.map(item, item.price * item.quantity - (has(item.discount) ? item.discount : 0.0)).sum()\"\xce\x01\n" +
+	"\x05total\x18\x04 \x01(\x01B\x11\xbaH\x0e\xc8\x01\x01\x12\t!\x00\x00\x00\x00\x00\x00\x00\x00R\x05total:\x8e\x02\xbaH\x8a\x02\x1a\x87\x02\n" +
+	"\x19customer_address_required\x12Fcustomer.address is required when shipping.type is PHYSICAL or EXPRESS\x1a\xa1\x01(this.shipping.type != proto.ShippingType.SHIPPING_TYPE_PHYSICAL && this.shipping.type != proto.ShippingType.SHIPPING_TYPE_EXPRESS) || has(this.customer.address)\"\xce\x01\n" +
 	"\fPersonalInfo\x12 \n" +
 	"\x04name\x18\x01 \x01(\tB\f\xbaH\t\xc8\x01\x01r\x04\x10\x02\x18dR\x04name\x12 \n" +
 	"\x05email\x18\x02 \x01(\tB\n" +
@@ -898,14 +897,13 @@ const file_proto_complex_validation_proto_rawDesc = "" +
 	"\xc8\x01\x01r\x05\x10\x01\x18\xc8\x01R\x04name\x12&\n" +
 	"\bquantity\x18\x03 \x01(\x05B\n" +
 	"\xbaH\a\xc8\x01\x01\x1a\x02(\x00R\bquantity\x12'\n" +
-	"\x05price\x18\x04 \x01(\x01B\x11\xbaH\x0e\xc8\x01\x01\x12\t!\x00\x00\x00\x00\x00\x00\x00\x00R\x05price\"\xed\x02\n" +
+	"\x05price\x18\x04 \x01(\x01B\x11\xbaH\x0e\xc8\x01\x01\x12\t!\x00\x00\x00\x00\x00\x00\x00\x00R\x05price\"\xd7\x01\n" +
 	"\tWarehouse\x12?\n" +
 	"\fwarehouse_id\x18\x01 \x01(\tB\x1c\xbaH\x19\xc8\x01\x01r\x14\x10\x04\x18\x142\x0e^WH-[A-Z0-9]+$R\vwarehouseId\x12(\n" +
 	"\blocation\x18\x02 \x01(\tB\f\xbaH\t\xc8\x01\x01r\x04\x10\x03\x18dR\blocation\x127\n" +
 	"\x05items\x18\x03 \x03(\v2\x14.proto.InventoryItemB\v\xbaH\b\x92\x01\x05\b\x00\x10\x90NR\x05items\x12&\n" +
 	"\bcapacity\x18\x04 \x01(\x05B\n" +
-	"\xbaH\a\xc8\x01\x01\x1a\x02 \x00R\bcapacity:\x93\x01\xbaH\x8f\x01\x1a\x8c\x01\n" +
-	"\x0ecapacity_check\x12>total quantity of all items must not exceed warehouse capacity\x1a:this.items.map(item, item.quantity).sum() <= this.capacity*\x7f\n" +
+	"\xbaH\a\xc8\x01\x01\x1a\x02 \x00R\bcapacity*\x7f\n" +
 	"\fShippingType\x12\x1d\n" +
 	"\x19SHIPPING_TYPE_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15SHIPPING_TYPE_DIGITAL\x10\x01\x12\x1a\n" +
